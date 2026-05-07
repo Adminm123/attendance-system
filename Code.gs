@@ -31,7 +31,8 @@ function doPost(e) {
       case 'checkTodayStatus':  return res(checkTodayStatus(data.name));
       case 'getAttendanceLogs': return res(getAttendanceLogs(data));
       case 'getAbsentByDate':   return res(getAbsentByDate(data));
-      case 'getLateByDate':     return res(getLateByDate(data));
+      case 'getLateByDate':       return res(getLateByDate(data));
+      case 'getSuspiciousStaff':  return res(getSuspiciousStaff());
       default: return res({ success: false, message: 'Action Not Found' });
     }
   } catch (err) { return res({ success: false, message: err.toString() }); }
@@ -47,7 +48,7 @@ function ensureSheetsExist() {
   const schemas = {
     'Staff':      ['Name','Nickname','Descriptors','MainBranchID','Status','CreatedAt'],
     'Branches':   ['ID','MallName','Province','TotalStaff','Lat','Lng','Radius','OpenTime','CloseTime','MinStaff'],
-    'Attendance': ['Name','Time','Date','Type','BranchID','HomeBranchID','IsCrossBranch','Lat','Lng','Status','LateMinutes']
+    'Attendance': ['Name','Time','Date','Type','BranchID','HomeBranchID','IsCrossBranch','Lat','Lng','Status','LateMinutes','Accuracy']
   };
   for (const name in schemas) {
     let sheet = ss.getSheetByName(name);
@@ -167,7 +168,8 @@ function logAttendance(data) {
   ss.getSheetByName('Attendance').appendRow([
     data.name, timeStr, dateStr, data.type,
     String(data.branchId), homeBranchId, isCross ? 'ใช่' : 'ไม่',
-    data.lat || '', data.lng || '', status, isEarlyOut ? earlyMins : lateMins
+    data.lat || '', data.lng || '', status, isEarlyOut ? earlyMins : lateMins,
+    data.accuracy !== undefined ? Math.round(data.accuracy) : -1  // Accuracy (m)
   ]);
 
   return {
@@ -482,7 +484,7 @@ function fmtTime(v) {
 
   // Fraction 0-1 → เวลาในวัน (Sheets เก็บ time-only แบบนี้บางครั้ง)
   if (!isNaN(num) && num >= 0 && num < 1) {
-    const totalMins = Math.round(num * 24 * 60);
+    const totalMins = Math.floor(num * 24 * 60); // floor ป้องกัน rounding error
     const h = Math.floor(totalMins / 60);
     const m = totalMins % 60;
     return h.toString().padStart(2, '0') + ':' + m.toString().padStart(2, '0');
@@ -508,4 +510,62 @@ function calcLate(timeStr, startRaw) {
   const [sH, sM] = start.split(':').map(Number);
   const diff = (cH * 60 + cM) - (sH * 60 + sM);
   return diff > 0 ? { isLate: true, mins: diff } : { isLate: false, mins: 0 };
+}
+
+// ─── Suspicious GPS Detection ─────────────────────────────────────────────────
+function getSuspiciousStaff() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const nickMap = {};
+  ss.getSheetByName('Staff').getDataRange().getValues().slice(1)
+    .forEach(r => { if (r[0]) nickMap[r[0]] = r[1] || ''; });
+
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 30);
+  const cutoffStr = fmtDate(cutoff);
+
+  const rows = ss.getSheetByName('Attendance').getDataRange().getValues().slice(1)
+    .filter(r => {
+      if (r[3] !== 'IN') return false;
+      let d;
+      if (r[2] instanceof Date) { d = fmtDate(r[2]); }
+      else { const p = new Date(String(r[2]).trim()); d = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
+      return d >= cutoffStr;
+    });
+
+  const byName = {};
+  rows.forEach(r => {
+    if (!byName[r[0]]) byName[r[0]] = [];
+    byName[r[0]].push(Number(r[11]) || -1);
+  });
+
+  const suspicious = [];
+  Object.entries(byName).forEach(([name, accList]) => {
+    const issues = [];
+    const valid  = accList.filter(a => a >= 0);
+    if (!valid.length) return;
+
+    // ตรวจ 1: Accuracy = 0
+    const zeroCount = valid.filter(a => a === 0).length;
+    if (zeroCount >= 3) issues.push({ level:'red', text:`Accuracy = 0 จำนวน ${zeroCount} ครั้ง (อาจใช้ Fake GPS)` });
+
+    // ตรวจ 2: Accuracy > 200m เกิน 5 ครั้ง
+    const highCount = valid.filter(a => a > 200).length;
+    if (highCount >= 5) issues.push({ level:'yellow', text:`GPS อ่อนผิดปกติ ${highCount} ครั้ง (>200m)` });
+
+    // ตรวจ 3: Accuracy ซ้ำกัน ±1m
+    const nonZero = valid.filter(a => a > 0);
+    let maxRepeat = 0, repeatVal = 0;
+    nonZero.forEach(a => {
+      const cnt = nonZero.filter(b => Math.abs(b-a) <= 1).length;
+      if (cnt > maxRepeat) { maxRepeat = cnt; repeatVal = a; }
+    });
+    if (maxRepeat >= 3) issues.push({ level:'red', text:`Accuracy ซ้ำกัน ~${repeatVal}m จำนวน ${maxRepeat} ครั้ง (สัญญาณปลอม)` });
+
+    if (issues.length > 0) {
+      suspicious.push({ name, nickname: nickMap[name]||'', issues, checkCount: valid.length });
+    }
+  });
+
+  suspicious.sort((a,b) => b.issues.filter(i=>i.level==='red').length - a.issues.filter(i=>i.level==='red').length);
+  return { success:true, suspicious };
 }

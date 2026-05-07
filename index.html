@@ -315,17 +315,22 @@ nav{background:#fff;border-bottom:1px solid #e8ecf0;position:sticky;top:0;z-inde
     </div>
 
     <!-- TAB: Staff -->
-    <div id="tab-staff" class="hidden card overflow-hidden">
-      <table class="w-full">
-        <thead class="bg-slate-50">
-          <tr>
-            <th class="text-left text-[9px] text-slate-400 uppercase tracking-widest p-4">รายชื่อ</th>
-            <th class="text-left text-[9px] text-slate-400 uppercase tracking-widest p-4">สาขา</th>
-            <th class="text-right text-[9px] text-slate-400 uppercase tracking-widest p-4">จัดการ</th>
-          </tr>
-        </thead>
-        <tbody id="office-staff-body" class="divide-y divide-slate-50"></tbody>
-      </table>
+    <div id="tab-staff" class="hidden space-y-3">
+      <!-- ส่วนเตือน GPS น่าสงสัย -->
+      <div id="suspicious-section"></div>
+      <!-- รายชื่อพนักงาน -->
+      <div class="card overflow-hidden">
+        <table class="w-full">
+          <thead class="bg-slate-50">
+            <tr>
+              <th class="text-left text-[9px] text-slate-400 uppercase tracking-widest p-4">รายชื่อ</th>
+              <th class="text-left text-[9px] text-slate-400 uppercase tracking-widest p-4">สาขา</th>
+              <th class="text-right text-[9px] text-slate-400 uppercase tracking-widest p-4">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="office-staff-body" class="divide-y divide-slate-50"></tbody>
+        </table>
+      </div>
     </div>
 
     <!-- TAB: Logs -->
@@ -908,9 +913,19 @@ async function retryGPS() {
 async function getGPS() {
   return new Promise(resolve => {
     navigator.geolocation.getCurrentPosition(
-      p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => resolve(null),
-      { timeout: 10000 }
+      p => resolve({
+        lat:      p.coords.latitude,
+        lng:      p.coords.longitude,
+        accuracy: p.coords.accuracy  // เพิ่ม accuracy
+      }),
+      err => {
+        // แจ้ง error ตามประเภท ไม่ค้างไม่มีกำหนด
+        if (err.code === 1) toast('กรุณาอนุญาตการเข้าถึงตำแหน่ง GPS', 'error');
+        else if (err.code === 2) toast('ระบุตำแหน่งไม่ได้ กรุณาเปิด GPS', 'error');
+        else toast('GPS หมดเวลา กรุณาลองใหม่', 'warn');
+        resolve(null);
+      },
+      { timeout: 12000, enableHighAccuracy: true, maximumAge: 5000 }
     );
   });
 }
@@ -933,7 +948,9 @@ async function doLog(type) {
   const r = await api('logAttendance', {
     name: detUser, type,
     branchId: detBranch.id,
-    lat: detGps?.lat || '', lng: detGps?.lng || ''
+    lat:      detGps?.lat      || '',
+    lng:      detGps?.lng      || '',
+    accuracy: detGps?.accuracy ?? -1  // บันทึก accuracy
   });
 
   loading(false);
@@ -966,9 +983,10 @@ async function doLog(type) {
 // ── OFFICE DASHBOARD ───────────────────────────────────────────
 async function loadOfficeDash() {
   loading(true, 'โหลด Dashboard...');
-  const [dashRes, staffRes] = await Promise.all([
+  const [dashRes, staffRes, suspRes] = await Promise.all([
     api('getAdminDashboard'),
-    api('getStaffList', { role: 'office' })
+    api('getStaffList', { role: 'office' }),
+    api('getSuspiciousStaff')
   ]);
   loading(false);
   dashData = dashRes;
@@ -979,11 +997,22 @@ async function loadOfficeDash() {
   const yy  = now.getFullYear() + 543;
   document.getElementById('dash-date').textContent = `${dd} ${thM[now.getMonth()]} ${yy}`;
 
+  const suspicious = suspRes?.suspicious || [];
+
   renderBranches(dashRes.dashboard || []);
   renderAbsent(dashRes.dashboard   || []);
   renderLate(dashRes.dashboard     || []);
   renderStaff(staffRes             || []);
+  renderSuspicious(suspicious);
   await renderLogs();
+
+  // badge แดงที่ tab พนักงาน
+  const staffBtn = document.getElementById('tab-staff-btn');
+  if (suspicious.length > 0) {
+    staffBtn.innerHTML = `👥 พนักงาน <span style="background:#ef4444;color:#fff;border-radius:999px;padding:1px 6px;font-size:10px;margin-left:4px;">${suspicious.length}</span>`;
+  } else {
+    staffBtn.textContent = '👥 พนักงาน';
+  }
 }
 
 function colorClass(cs) {
@@ -1338,6 +1367,49 @@ function copyLateList() {
 }
 
 // ─── STAFF (เพิ่มปุ่มย้ายสาย) ───────────────────────────────────
+// ─── SUSPICIOUS GPS ──────────────────────────────────────────────
+function renderSuspicious(suspicious) {
+  const el = document.getElementById('suspicious-section');
+  if (!el) return;
+
+  if (!suspicious.length) {
+    el.innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="card overflow-hidden border-l-4 border-red-500">
+      <div class="p-4 bg-red-50 flex items-center gap-3">
+        <span class="text-xl">⚠️</span>
+        <div>
+          <div class="font-black text-red-700">พบพฤติกรรม GPS น่าสงสัย ${suspicious.length} คน</div>
+          <div class="text-[10px] text-red-500 mt-0.5">วิเคราะห์จาก 30 วันล่าสุด</div>
+        </div>
+      </div>
+      <div class="divide-y divide-slate-50">
+        ${suspicious.map(s => {
+          const nick = s.nickname ? `<span class="text-red-600 font-black text-xs">(${s.nickname})</span> ` : '';
+          const hasRed = s.issues.some(i => i.level === 'red');
+          return `
+          <div class="p-4">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="text-lg">${hasRed ? '🔴' : '🟡'}</span>
+              <span class="font-bold text-sm">${nick}${s.name}</span>
+              <span class="badge b-gray text-[9px]">เช็คอิน ${s.checkCount} ครั้ง</span>
+            </div>
+            <div class="space-y-1 pl-7">
+              ${s.issues.map(i => `
+                <div class="flex items-start gap-2 text-xs">
+                  <span>${i.level === 'red' ? '🔴' : '🟡'}</span>
+                  <span class="${i.level === 'red' ? 'text-red-700' : 'text-yellow-700'} font-semibold">${i.text}</span>
+                </div>`).join('')}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+}
+
 function renderStaff(staff) {
   document.getElementById('office-staff-body').innerHTML = !staff.length
     ? '<tr><td colspan="3" class="text-center py-8 text-slate-400">ไม่มีพนักงาน</td></tr>'
