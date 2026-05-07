@@ -535,7 +535,10 @@ function getSuspiciousStaff() {
   const byName = {};
   rows.forEach(r => {
     if (!byName[r[0]]) byName[r[0]] = [];
-    byName[r[0]].push(Number(r[11]) || -1);
+    // ใช้ตรวจ undefined/empty แทน || -1 เพราะ 0 เป็น falsy
+    const acc = (r[11] !== undefined && r[11] !== '' && r[11] !== null)
+      ? Number(r[11]) : -1;
+    byName[r[0]].push(acc);
   });
 
   const suspicious = [];
