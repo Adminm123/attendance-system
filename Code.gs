@@ -31,6 +31,7 @@ function doPost(e) {
       case 'checkTodayStatus':  return res(checkTodayStatus(data.name));
       case 'getAttendanceLogs': return res(getAttendanceLogs(data));
       case 'getAbsentByDate':   return res(getAbsentByDate(data));
+      case 'getLateByDate':     return res(getLateByDate(data));
       default: return res({ success: false, message: 'Action Not Found' });
     }
   } catch (err) { return res({ success: false, message: err.toString() }); }
@@ -420,7 +421,54 @@ function getAbsentByDate(data) {
   return { success:true, date, totalAbsent, branches };
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Late By Date (มาสายย้อนหลัง) ────────────────────────────────────────────
+function getLateByDate(data) {
+  const date = data.date || fmtDate(new Date());
+  const ss   = SpreadsheetApp.getActiveSpreadsheet();
+
+  // nickname map
+  const nickMap = {};
+  ss.getSheetByName('Staff').getDataRange().getValues().slice(1)
+    .forEach(r => { if (r[0]) nickMap[r[0]] = r[1] || ''; });
+
+  // branch map
+  const branchMap = {};
+  ss.getSheetByName('Branches').getDataRange().getValues().slice(1)
+    .filter(r => r[0]).forEach(b => {
+      branchMap[String(b[0])] = { name: b[1], openTime: fmtTime(b[7]) };
+    });
+
+  // attendance วันนั้น เฉพาะ IN
+  const attRows = ss.getSheetByName('Attendance').getDataRange().getValues().slice(1)
+    .filter(r => {
+      let d;
+      if (r[2] instanceof Date) { d = fmtDate(r[2]); }
+      else { const p = new Date(String(r[2]).trim()); d = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
+      return d === date && r[3] === 'IN';
+    });
+
+  const lateStaff = [];
+  attRows.forEach(r => {
+    const t = fmtTime(r[1]);
+    const branchId = String(r[4]);
+    const branch = branchMap[branchId] || { name: branchId, openTime: '' };
+    if (!branch.openTime || !branch.openTime.includes(':')) return;
+    const lr = calcLate(t, branch.openTime);
+    if (!lr.isLate) return;
+    lateStaff.push({
+      name:       r[0],
+      nickname:   nickMap[r[0]] || '',
+      branchId,
+      branchName: branch.name,
+      time:       t,
+      lateMins:   lr.mins
+    });
+  });
+
+  // เรียงจากสายมากไปน้อย
+  lateStaff.sort((a,b) => b.lateMins - a.lateMins);
+  return { success: true, date, total: lateStaff.length, staff: lateStaff };
+}
 function fmtDate(d)   { return Utilities.formatDate(d, 'GMT+7', 'yyyy-MM-dd'); }
 function fmtTime(v) {
   if (!v && v !== 0) return '';
