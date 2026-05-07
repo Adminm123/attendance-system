@@ -165,6 +165,21 @@ function logAttendance(data) {
     }
   }
 
+  // ── ป้องกัน OUT โดยไม่มี IN วันนี้ ──────────────────────────────
+  if (data.type === 'OUT') {
+    const todayRows = ss.getSheetByName('Attendance').getDataRange().getValues().slice(1)
+      .filter(r => {
+        let d;
+        if (r[2] instanceof Date) { d = fmtDate(r[2]); }
+        else { const p = new Date(String(r[2]).trim()); d = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
+        return r[0] === data.name && d === dateStr;
+      });
+    const hasIn  = todayRows.some(r => r[3] === 'IN');
+    const hasOut = todayRows.some(r => r[3] === 'OUT');
+    if (!hasIn)  return { success: false, message: 'ยังไม่ได้เช็คอินวันนี้' };
+    if (hasOut)  return { success: false, message: 'เลิกงานไปแล้ววันนี้' };
+  }
+
   ss.getSheetByName('Attendance').appendRow([
     data.name, timeStr, dateStr, data.type,
     String(data.branchId), homeBranchId, isCross ? 'ใช่' : 'ไม่',

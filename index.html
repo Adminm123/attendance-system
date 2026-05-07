@@ -788,7 +788,7 @@ async function showResultPage() {
   document.getElementById('r-time').textContent = timeStr;
   const [cH, cM] = timeStr.split(':').map(Number);
 
-  const isCheckingOut = !!(todayStatus?.hasIn && todayStatus?.canOut);
+  const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
 
   if (isCheckingOut) {
     // ── กำลังเลิกงาน → เปรียบกับ closeTime ──
@@ -830,23 +830,26 @@ async function showResultPage() {
     prevRow.classList.remove('hidden');
   }
 
-  // Action buttons — show AFTER everything loaded
+  // Action buttons — ใช้ hasIn/hasOut โดยตรง ไม่พึ่ง canOut
   document.getElementById('r-actions').classList.remove('hidden');
   const btnIn  = document.getElementById('btn-in');
   const btnOut = document.getElementById('btn-out');
 
-  if (todayStatus?.canIn && !todayStatus?.hasIn) {
-    // ยังไม่เช็คอิน: แสดงเฉพาะ เข้างาน
+  if (!todayStatus?.hasIn) {
+    // ยังไม่เช็คอิน → แสดงเฉพาะ เข้างาน
     btnIn.classList.remove('hidden'); btnIn.disabled = false;
     btnOut.classList.add('hidden');
-  } else if (todayStatus?.canOut) {
-    // เช็คอินแล้ว: แสดงเฉพาะ เลิกงาน
+  } else if (todayStatus?.hasIn && !todayStatus?.hasOut) {
+    // เช็คอินแล้ว ยังไม่เลิก → แสดงเฉพาะ เลิกงาน
     btnIn.classList.add('hidden');
     btnOut.classList.remove('hidden'); btnOut.disabled = false;
   } else {
-    // fallback (เช็คทั้งคู่แล้ว ฯลฯ)
-    btnIn.classList.remove('hidden'); btnIn.disabled = !!todayStatus?.hasIn;
-    btnOut.classList.remove('hidden'); btnOut.disabled = !todayStatus?.hasIn;
+    // เช็คทั้งคู่แล้ว → ซ่อนทั้งสอง แสดง message
+    btnIn.classList.add('hidden');
+    btnOut.classList.add('hidden');
+    document.getElementById('r-actions').insertAdjacentHTML('beforeend',
+      '<p class="text-center text-sm font-bold text-green-600 pb-4">✅ บันทึกครบแล้ววันนี้</p>'
+    );
   }
 }
 
@@ -890,7 +893,7 @@ async function retryGPS() {
   const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
   document.getElementById('r-time').textContent = timeStr;
 
-  const isCheckingOut = !!(todayStatus?.hasIn && todayStatus?.canOut);
+  const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
   const [cH, cM] = timeStr.split(':').map(Number);
   if (isCheckingOut && detBranch.closeTime) {
     document.getElementById('r-opentime').textContent = `เวลาเลิกงาน: ${detBranch.closeTime}`;
