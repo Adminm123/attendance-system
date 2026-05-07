@@ -1402,7 +1402,13 @@ function updatePoseUI(idx) {
   for (let i = 0; i < 5; i++) {
     const dot = document.getElementById('dot-' + i);
     dot.classList.remove('bg-red-600', 'bg-green-500', 'bg-slate-200', 'scale-125');
-    dot.classList.add(i < idx ? 'bg-green-500' : i === idx ? 'bg-red-600 scale-125' : 'bg-slate-200');
+    if (i < idx) {
+      dot.classList.add('bg-green-500');
+    } else if (i === idx) {
+      dot.classList.add('bg-red-600', 'scale-125');
+    } else {
+      dot.classList.add('bg-slate-200');
+    }
   }
 }
 
