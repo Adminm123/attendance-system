@@ -612,7 +612,7 @@ function buildMatcher() {
   const labeled = names.map(n => new faceapi.LabeledFaceDescriptors(n,
     staffDescriptors.filter(s => s.name === n).map(s => new Float32Array(s.descriptor))
   ));
-  faceMatcher = new faceapi.FaceMatcher(labeled, 0.45);
+  faceMatcher = new faceapi.FaceMatcher(labeled, 0.4);
 }
 
 // ── Login ──────────────────────────────────────────────────────
