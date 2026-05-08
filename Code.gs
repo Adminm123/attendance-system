@@ -33,6 +33,7 @@ function doPost(e) {
       case 'getAbsentByDate':   return res(getAbsentByDate(data));
       case 'getLateByDate':       return res(getLateByDate(data));
       case 'getSuspiciousStaff':  return res(getSuspiciousStaff());
+      case 'getTodayAttendance':  return res(getTodayAttendance());
       default: return res({ success: false, message: 'Action Not Found' });
     }
   } catch (err) { return res({ success: false, message: err.toString() }); }
@@ -486,6 +487,33 @@ function getLateByDate(data) {
   lateStaff.sort((a,b) => b.lateMins - a.lateMins);
   return { success: true, date, total: lateStaff.length, staff: lateStaff };
 }
+// ─── Today Attendance (Public — for home page history) ──────────────────────
+function getTodayAttendance() {
+  const ss      = SpreadsheetApp.getActiveSpreadsheet();
+  const today   = fmtDate(new Date());
+  const branches= ss.getSheetByName('Branches').getDataRange().getValues().slice(1).filter(r=>r[0]);
+  const branchMap = {};
+  branches.forEach(b => { branchMap[String(b[0])] = b[1]; });
+
+  const rows = ss.getSheetByName('Attendance').getDataRange().getValues().slice(1)
+    .filter(r => {
+      if (!r[0]) return false;
+      let d;
+      if (r[2] instanceof Date) { d = fmtDate(r[2]); }
+      else { const p = new Date(String(r[2]).trim()); d = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
+      return d === today;
+    })
+    .map(r => ({
+      name:       r[0],
+      type:       r[3],
+      time:       fmtTime(r[1]),
+      branchName: branchMap[String(r[4])] || String(r[4])
+    }))
+    .reverse();
+
+  return { success: true, records: rows };
+}
+
 function fmtDate(d)   { return Utilities.formatDate(d, 'GMT+7', 'yyyy-MM-dd'); }
 function fmtTime(v) {
   if (!v && v !== 0) return '';
