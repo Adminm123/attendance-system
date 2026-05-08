@@ -580,7 +580,11 @@ function changeView(id) {
   document.querySelectorAll('#app > div').forEach(v => v.classList.add('hidden'));
   document.getElementById('view-' + id)?.classList.remove('hidden');
   // refresh สาขาทุกครั้งที่เปิดหน้าลงทะเบียน
-  if (id === 'register') updateBranchDropdown();
+  if (id === 'register') {
+    updateBranchDropdown();
+    document.getElementById('reg-s1').classList.remove('hidden');
+    document.getElementById('reg-s2').classList.add('hidden');
+  }
 }
 function goHome() {
   stopCam();
