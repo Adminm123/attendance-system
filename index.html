@@ -3,520 +3,1162 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Attendance System</title>
+<title>Attendance · ระบบเช็คชื่อ</title>
 
 <!-- PWA -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#cc0000">
+<meta name="theme-color" content="#0a1d3f">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Attendance">
 
-<!-- Preconnect เพื่อลด DNS lookup time -->
+<!-- Preconnect -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-<!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<!-- Fonts: IBM Plex Sans Thai + Plex Sans for numerals -->
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
 <!-- face-api.js -->
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 
 <!-- Tailwind -->
 <script src="https://cdn.tailwindcss.com"></script>
+
 <style>
-:root { --red:#cc0000; --red2:#990000; }
+:root{
+  /* navy primary */
+  --navy-950:#050d1f;
+  --navy-900:#0a1d3f;
+  --navy-800:#102a52;
+  --navy-700:#1a3563;
+  --navy-600:#2a4a7a;
+  --navy-500:#4a6896;
+  --navy-100:#e6ecf5;
+  --navy-50:#f1f4fa;
+
+  /* red accent */
+  --red:#cc0000;
+  --red-700:#a30000;
+  --red-50:#fef2f2;
+
+  /* surfaces */
+  --bg:#f4f5f8;
+  --bg-2:#eaecf2;
+  --surface:#ffffff;
+  --line:#e6e8ee;
+  --line-2:#eef0f4;
+
+  /* status */
+  --success:#0f7a4a;
+  --success-50:#e8f4ee;
+  --warn:#b96b00;
+  --warn-50:#fdf3e3;
+  --info:#1d4d8c;
+  --info-50:#e8eff8;
+
+  /* type */
+  --ink:#0a1d3f;
+  --ink-soft:#3b4a66;
+  --muted:#7a869a;
+  --faint:#9aa6bb;
+}
+
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-body{font-family:'Sarabun',sans-serif;background:#f0f2f5;color:#1e293b;margin:0;min-height:100vh;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:'IBM Plex Sans Thai','IBM Plex Sans',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+  font-feature-settings:"ss01","cv11";
+  -webkit-font-smoothing:antialiased;
+  letter-spacing:-0.005em;
+}
+.font-mono{font-family:'IBM Plex Mono','IBM Plex Sans',monospace;font-feature-settings:"tnum";}
+.tabular{font-variant-numeric:tabular-nums;}
 
-/* NAV */
-nav{background:#fff;border-bottom:1px solid #e8ecf0;position:sticky;top:0;z-index:50;}
+/* ── Mobile shell ─────────────────────────────────────── */
+.shell{max-width:520px;margin:0 auto;padding:0 18px 96px;}
 
-/* CARDS */
-.card{background:#fff;border-radius:1.25rem;border:1px solid #e8ecf0;}
+/* ── Top app bar (mobile) ────────────────────────────── */
+.appbar{
+  position:sticky;top:0;z-index:40;
+  background:var(--bg);
+  padding:14px 18px 0;
+  max-width:520px;margin:0 auto;
+  display:flex;flex-direction:column;align-items:stretch;
+  border-bottom:1px solid transparent;
+  transition:border-color .2s, background .2s;
+}
+.appbar-row{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;}
+.dev-banner{
+  margin:0 -18px;
+  padding:5px 18px;
+  background:var(--navy-900);
+  text-align:center;
+  font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(255,255,255,.6);
+}
+.brand{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
+.brand-mark{
+  width:30px;height:30px;border-radius:9px;
+  background:var(--navy-900);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden;
+}
+.brand-mark::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(140deg,transparent 60%,rgba(204,0,0,.55) 100%);
+}
+.brand-mark span{color:#fff;font-weight:700;font-size:14px;letter-spacing:.04em;position:relative;z-index:1;font-family:'IBM Plex Mono',monospace;}
+.brand-name{
+  font-weight:600;font-size:13px;line-height:1.4;letter-spacing:.18em;
+  color:var(--ink);text-transform:uppercase;
+}
+.brand-sub{font-size:9px;line-height:1.5;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-weight:500;margin-top:3px;}
 
-/* BUTTONS */
-.btn-red{background:var(--red);color:#fff;font-weight:800;border:none;cursor:pointer;transition:all .18s;}
-.btn-red:hover{background:var(--red2);transform:translateY(-1px);}
-.btn-red:active{transform:translateY(0);}
-.btn-red:disabled{background:#cbd5e1;color:#94a3b8;transform:none;cursor:not-allowed;}
-.btn-gray{background:#f1f5f9;color:#64748b;font-weight:700;border:none;cursor:pointer;transition:all .18s;}
-.btn-gray:hover{background:#e2e8f0;}
-.btn-green{background:#16a34a;color:#fff;font-weight:800;border:none;cursor:pointer;transition:all .18s;}
-.btn-green:hover{background:#15803d;}
-.btn-green:disabled{background:#cbd5e1;color:#94a3b8;cursor:not-allowed;}
-.btn-orange{background:#ea580c;color:#fff;font-weight:800;border:none;cursor:pointer;transition:all .18s;}
-.btn-orange:hover{background:#c2410c;}
+/* ── Cards ───────────────────────────────────────────── */
+.card{
+  background:var(--surface);
+  border-radius:18px;
+  border:1px solid var(--line);
+  box-shadow:0 1px 0 rgba(10,29,63,.02);
+}
+.card-flush{background:var(--surface);border-radius:0;border:1px solid var(--line);}
 
-/* LOADING */
-#loading-overlay{background:rgba(255,255,255,0.93);backdrop-filter:blur(12px);z-index:9999;}
-.spinner{border:3px solid #fee2e2;border-top:3px solid var(--red);border-radius:50%;width:34px;height:34px;animation:spin .7s linear infinite;}
+/* ── Buttons (premium) ───────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:inherit;font-weight:600;
+  border:none;cursor:pointer;
+  transition:transform .15s ease, background .15s ease, box-shadow .15s ease, color .15s ease;
+  letter-spacing:.01em;
+  position:relative;overflow:hidden;
+}
+.btn:active{transform:translateY(1px);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn-primary{background:var(--navy-900);color:#fff;}
+.btn-primary:hover:not(:disabled){background:var(--navy-800);}
+.btn-accent{background:var(--red);color:#fff;}
+.btn-accent:hover:not(:disabled){background:var(--red-700);}
+.btn-success{background:var(--success);color:#fff;}
+.btn-success:hover:not(:disabled){background:#0a5e38;}
+.btn-warn{background:#b96b00;color:#fff;}
+.btn-warn:hover:not(:disabled){background:#8b5000;}
+.btn-ghost{background:transparent;color:var(--ink);border:1px solid var(--line);}
+.btn-ghost:hover:not(:disabled){background:var(--bg);border-color:var(--navy-500);}
+.btn-soft{background:var(--navy-50);color:var(--navy-900);}
+.btn-soft:hover:not(:disabled){background:var(--navy-100);}
+
+/* Ripple */
+.btn .ripple{
+  position:absolute;border-radius:999px;
+  transform:scale(0);animation:ripple .6s ease-out;
+  background:rgba(255,255,255,.45);pointer-events:none;
+}
+@keyframes ripple{to{transform:scale(3);opacity:0;}}
+
+/* ── Badges (refined) ────────────────────────────────── */
+.chip{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:3px 9px;border-radius:6px;
+  font-size:10.5px;font-weight:600;letter-spacing:.02em;
+  border:1px solid transparent;
+  font-family:inherit;
+}
+.chip.ok       {background:var(--success-50);color:var(--success);border-color:#cfe7da;}
+.chip.bad      {background:var(--red-50);  color:var(--red-700);border-color:#fad6d6;}
+.chip.warn     {background:var(--warn-50); color:var(--warn);   border-color:#f3dfb3;}
+.chip.info     {background:var(--info-50); color:var(--info);   border-color:#cddff0;}
+.chip.neutral  {background:var(--bg);      color:var(--ink-soft);border-color:var(--line);}
+.chip.dark     {background:var(--navy-900);color:#fff;}
+.chip.outline-r{background:transparent;border-color:var(--red);color:var(--red);}
+
+/* legacy badge mapping (so dashboard renderer still works) */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:6px;font-size:10.5px;font-weight:600;letter-spacing:.02em;border:1px solid transparent;}
+.b-green{background:var(--success-50);color:var(--success);border-color:#cfe7da;}
+.b-red  {background:var(--red-50);color:var(--red-700);border-color:#fad6d6;}
+.b-yellow{background:var(--warn-50);color:var(--warn);border-color:#f3dfb3;}
+.b-orange{background:var(--warn-50);color:var(--warn);border-color:#f3dfb3;}
+.b-indigo{background:var(--info-50);color:var(--info);border-color:#cddff0;}
+.b-gray  {background:var(--bg);color:var(--ink-soft);border-color:var(--line);}
+.b-blue  {background:var(--info-50);color:var(--info);border-color:#cddff0;}
+
+/* ── Inputs ──────────────────────────────────────────── */
+.inp{
+  width:100%;
+  background:#fff;
+  border:1px solid var(--line);
+  padding:13px 14px;
+  border-radius:11px;
+  font-family:inherit;
+  font-weight:500;font-size:14px;
+  color:var(--ink);
+  outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.inp::placeholder{color:var(--faint);font-weight:400;}
+.inp:focus{border-color:var(--navy-700);box-shadow:0 0 0 3px rgba(10,29,63,.08);}
+.inp-sm{padding:10px 12px;font-size:13px;border-radius:9px;}
+
+/* ── Loading overlay ─────────────────────────────────── */
+#loading-overlay{
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  z-index:9999;
+}
+.spinner{
+  width:30px;height:30px;border-radius:50%;
+  border:2px solid var(--navy-100);
+  border-top-color:var(--navy-900);
+  animation:spin .7s linear infinite;
+}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-/* VIDEO */
-.video-wrap{position:relative;border-radius:1.25rem;overflow:hidden;background:#111;width:100%;max-width:340px;margin:0 auto;}
+/* ── Video frame ─────────────────────────────────────── */
+.video-wrap{
+  position:relative;
+  border-radius:22px;overflow:hidden;
+  background:var(--navy-950);
+  width:100%;max-width:360px;margin:0 auto;
+  box-shadow:0 12px 32px -16px rgba(10,29,63,.5), 0 0 0 1px rgba(10,29,63,.06);
+}
 .video-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
-#scan-canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
+#scan-canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
 
-/* BADGES */
-.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.04em;}
-.b-green{background:#dcfce7;color:#166534;}
-.b-red{background:#fee2e2;color:#991b1b;}
-.b-yellow{background:#fef9c3;color:#854d0e;}
-.b-orange{background:#ffedd5;color:#9a3412;}
-.b-indigo{background:#e0e7ff;color:#3730a3;}
-.b-gray{background:#f1f5f9;color:#475569;}
-.b-blue{background:#dbeafe;color:#1e40af;}
+/* corner brackets on viewfinder */
+.viewfinder::before,.viewfinder::after,
+.viewfinder>.tl,.viewfinder>.tr,.viewfinder>.bl,.viewfinder>.br{
+  content:"";position:absolute;width:34px;height:34px;
+  border:2px solid #fff;border-radius:4px;mix-blend-mode:screen;
+  pointer-events:none;
+}
+.viewfinder>.tl{top:14px;left:14px;border-right:none;border-bottom:none;border-top-left-radius:14px;}
+.viewfinder>.tr{top:14px;right:14px;border-left:none;border-bottom:none;border-top-right-radius:14px;}
+.viewfinder>.bl{bottom:14px;left:14px;border-right:none;border-top:none;border-bottom-left-radius:14px;}
+.viewfinder>.br{bottom:14px;right:14px;border-left:none;border-top:none;border-bottom-right-radius:14px;}
 
-/* COLOR STATUS BAR */
-.status-bar{height:5px;border-radius:3px;transition:width .4s;}
+/* recording dot */
+.rec-dot{width:8px;height:8px;border-radius:50%;background:var(--red);position:relative;}
+.rec-dot::after{content:"";position:absolute;inset:-7px;border-radius:50%;border:1.5px solid var(--red);animation:pulseRing 1.4s ease-out infinite;}
+@keyframes pulseRing{0%{transform:scale(.5);opacity:.9}100%{transform:scale(1.4);opacity:0}}
 
-/* PULSE */
-@keyframes pulseRing{0%{transform:scale(1);opacity:.8}100%{transform:scale(1.5);opacity:0}}
-.pulse::before{content:'';position:absolute;inset:-6px;border-radius:50%;background:rgba(204,0,0,.2);animation:pulseRing 1.2s ease-out infinite;}
+/* ── Pulse + ripple scan button ──────────────────────── */
+.scan-tile{
+  --c:var(--navy-900);
+  position:relative;
+  width:100%;
+  background:linear-gradient(160deg,var(--navy-900) 0%,var(--navy-800) 60%,var(--navy-700) 100%);
+  color:#fff;
+  border-radius:28px;
+  padding:36px 28px 32px;
+  border:none;cursor:pointer;
+  text-align:left;
+  box-shadow:
+    0 18px 40px -22px rgba(10,29,63,.55),
+    inset 0 1px 0 rgba(255,255,255,.07);
+  overflow:hidden;
+  transition:transform .25s ease, box-shadow .25s ease;
+  font-family:inherit;
+}
+.scan-tile:hover{transform:translateY(-2px);box-shadow:0 24px 50px -22px rgba(10,29,63,.65), inset 0 1px 0 rgba(255,255,255,.07);}
+.scan-tile:active{transform:translateY(0);}
 
-/* FADE */
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.fade-up{animation:fadeUp .25s ease forwards;}
+.scan-tile .glow{
+  position:absolute;
+  width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(204,0,0,.45) 0%,rgba(204,0,0,0) 70%);
+  right:-80px;top:-80px;
+  filter:blur(8px);
+  pointer-events:none;
+}
+.scan-tile .grain{
+  position:absolute;inset:0;
+  background-image:
+    radial-gradient(circle at 20% 80%,rgba(255,255,255,.04) 0,transparent 40%),
+    linear-gradient(135deg,transparent 60%,rgba(204,0,0,.10));
+  pointer-events:none;
+}
+.scan-tile .ring,
+.scan-tile .ring2{
+  position:absolute;
+  width:62px;height:62px;border-radius:50%;
+  border:1.5px solid rgba(255,255,255,.35);
+  right:32px;top:36px;
+  pointer-events:none;
+}
+.scan-tile .ring{animation:tileRing 2s ease-out infinite;}
+.scan-tile .ring2{animation:tileRing 2s ease-out 1s infinite;}
+@keyframes tileRing{
+  0%  {transform:scale(.6);opacity:.85;}
+  100%{transform:scale(2.0);opacity:0;}
+}
+.scan-tile .lens{
+  position:absolute;right:46px;top:50px;
+  width:34px;height:34px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,#fff 0%,#e6e8ee 38%,var(--navy-900) 70%);
+  box-shadow:0 0 0 3px rgba(255,255,255,.1), 0 6px 14px rgba(0,0,0,.3);
+}
+.scan-tile .lens::after{
+  content:"";position:absolute;inset:7px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,rgba(255,255,255,.7),transparent 50%);
+}
+.scan-tile .ripple-host{position:absolute;inset:0;pointer-events:none;}
 
-/* TABS */
-.tab-btn{padding:7px 18px;border-radius:999px;font-size:11px;font-weight:700;transition:all .15s;color:#64748b;background:transparent;border:none;cursor:pointer;}
-.tab-btn.active{background:var(--red);color:#fff;}
+/* ── Stat / metric tile (mobile home) ────────────────── */
+.stat{
+  display:flex;flex-direction:column;gap:4px;
+  padding:14px 16px;
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:14px;
+}
+.stat-num{font-size:22px;font-weight:600;color:var(--ink);font-feature-settings:"tnum";letter-spacing:-.02em;}
+.stat-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500;}
 
-/* STATUS CARDS in scan-result */
-.info-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+/* ── Section headers ─────────────────────────────────── */
+.eyebrow{font-size:10px;line-height:1.6;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:600;}
+.h-display{font-size:28px;line-height:1.35;font-weight:600;letter-spacing:-.02em;color:var(--ink);}
+.h-1{font-size:22px;line-height:1.4;font-weight:600;letter-spacing:-.015em;color:var(--ink);}
+.h-2{font-size:16px;line-height:1.5;font-weight:600;color:var(--ink);}
+
+/* ── Info row ────────────────────────────────────────── */
+.info-row{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:14px 0;border-bottom:1px solid var(--line-2);
+}
 .info-row:last-child{border-bottom:none;}
-.info-label{font-size:11px;color:#94a3b8;font-weight:700;}
-.info-value{font-size:13px;font-weight:800;color:#1e293b;}
+.info-label{font-size:11px;line-height:1.6;color:var(--muted);font-weight:500;letter-spacing:.04em;text-transform:uppercase;}
+.info-value{font-size:14px;line-height:1.55;font-weight:600;color:var(--ink);}
 
-/* Threshold colors */
-.th-green{border-left:4px solid #22c55e;}
-.th-yellow{border-left:4px solid #eab308;}
-.th-red{border-left:4px solid #ef4444;}
+/* threshold accents */
+.th-green {box-shadow:inset 4px 0 0 var(--success);}
+.th-yellow{box-shadow:inset 4px 0 0 var(--warn);}
+.th-red   {box-shadow:inset 4px 0 0 var(--red);}
 
-/* Input */
-.inp{width:100%;background:#f8fafc;border:1.5px solid #e2e8f0;padding:12px 16px;border-radius:12px;font-family:'Sarabun',sans-serif;font-weight:600;font-size:14px;outline:none;transition:border-color .15s;}
-.inp:focus{border-color:var(--red);}
-.inp-sm{padding:10px 14px;font-size:13px;border-radius:10px;}
+/* ── Toast ───────────────────────────────────────────── */
+#toast{
+  font-family:inherit;font-weight:500;
+  backdrop-filter:blur(10px);
+}
+
+/* ── Fade up ─────────────────────────────────────────── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+.fade-up{animation:fadeUp .3s ease forwards;}
+
+/* ── Tabs (mobile pills) ─────────────────────────────── */
+.tab-btn{
+  padding:8px 14px;border-radius:10px;line-height:1.5;
+  font-size:12px;font-weight:600;font-family:inherit;
+  color:var(--muted);background:transparent;border:none;cursor:pointer;
+  white-space:nowrap;letter-spacing:.01em;
+  transition:all .15s;
+}
+.tab-btn:hover{color:var(--ink);}
+.tab-btn.active{background:var(--navy-900);color:#fff;}
+
+/* ── Date input refinement ───────────────────────────── */
+input[type="date"],input[type="time"]{
+  font-family:inherit;font-weight:500;color:var(--ink);
+  background:#fff;border:1px solid var(--line);border-radius:9px;
+  padding:8px 10px;font-size:12px;outline:none;
+}
+input[type="date"]:focus,input[type="time"]:focus{border-color:var(--navy-700);}
+
+/* ── Pose dot ─────────────────────────────────────────── */
+.pose-dot{width:14px;height:14px;border-radius:50%;background:var(--line);transition:all .25s;}
+.pose-dot.done{background:var(--success);}
+.pose-dot.active{background:var(--red);transform:scale(1.3);box-shadow:0 0 0 4px rgba(204,0,0,.15);}
+
+/* ── Success burst ───────────────────────────────────── */
+.success-mark{
+  width:120px;height:120px;border-radius:50%;
+  background:var(--success-50);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  margin:0 auto;
+}
+.success-mark::before,.success-mark::after{
+  content:"";position:absolute;inset:-12px;border-radius:50%;
+  border:1px solid var(--success);opacity:0;
+  animation:burst 1.4s ease-out forwards;
+}
+.success-mark::after{animation-delay:.25s;}
+@keyframes burst{
+  0%{transform:scale(.7);opacity:.7;}
+  100%{transform:scale(1.4);opacity:0;}
+}
+.success-mark svg{width:60px;height:60px;color:var(--success);}
+
+/* ── Office Dashboard (DESKTOP) ──────────────────────── */
+.office-shell{display:none;}
+body.office-active{background:#f7f8fb;}
+body.office-active .mobile-shell{display:none !important;}
+body.office-active .appbar{display:none !important;}
+body.office-active .office-shell{display:flex;}
+
+/* Sidebar responsive */
+@media (max-width:767px){
+  .office-side{
+    position:fixed;left:-260px;top:0;bottom:0;z-index:100;
+    width:260px;transition:left .25s ease;
+  }
+  .office-side.open{left:0;box-shadow:6px 0 32px rgba(0,0,0,.35);}
+  .office-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99;display:none;}
+  .office-overlay.open{display:block;}
+  .office-content{padding:16px 14px !important;}
+  .office-topbar{padding:14px 16px !important;}
+  .office-hamburger{display:flex !important;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr) !important;gap:12px !important;}
+}
+.office-hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;background:transparent;border:1px solid var(--line);cursor:pointer;}
+
+.office-shell{
+  min-height:100vh;width:100%;
+}
+.office-side{
+  width:248px;flex-shrink:0;
+  background:var(--navy-900);
+  color:#fff;
+  display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;
+  border-right:1px solid var(--navy-800);
+}
+.office-side .brand-row{
+  padding:22px 22px 18px;
+  display:flex;align-items:center;gap:11px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.office-side .brand-mark{background:#fff;}
+.office-side .brand-mark span{color:var(--navy-900);}
+.office-side .brand-mark::after{background:linear-gradient(140deg,transparent 55%,rgba(204,0,0,.45) 100%);}
+.office-side .brand-name{color:#fff;}
+.office-side .brand-sub{color:rgba(255,255,255,.55);}
+
+.side-section{padding:18px 14px 6px;}
+.side-section .eyebrow{color:rgba(255,255,255,.4);}
+.side-nav{display:flex;flex-direction:column;gap:2px;padding:0 10px;}
+.side-nav-btn{
+  display:flex;align-items:center;gap:11px;line-height:1.5;
+  padding:11px 12px;border-radius:9px;
+  background:transparent;border:none;color:rgba(255,255,255,.72);
+  cursor:pointer;font-family:inherit;font-size:13.5px;font-weight:500;
+  text-align:left;transition:background .15s,color .15s;
+  letter-spacing:.005em;
+}
+.side-nav-btn:hover{background:rgba(255,255,255,.06);color:#fff;}
+.side-nav-btn.active{background:rgba(255,255,255,.08);color:#fff;font-weight:600;}
+.side-nav-btn.active::before{
+  content:"";width:3px;height:18px;border-radius:2px;background:var(--red);
+  margin-left:-15px;margin-right:8px;
+}
+.side-nav-btn .ico{width:18px;height:18px;flex-shrink:0;opacity:.85;}
+.side-nav-btn .ct{
+  margin-left:auto;
+  font-size:10px;background:var(--red);color:#fff;
+  padding:1px 6px;border-radius:6px;font-weight:600;
+}
+
+.side-foot{margin-top:auto;padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);font-size:10px;line-height:1.6;color:rgba(255,255,255,.4);letter-spacing:.06em;}
+.side-foot strong{color:rgba(255,255,255,.7);}
+
+.office-main{flex:1;min-width:0;display:flex;flex-direction:column;}
+.office-topbar{
+  padding:18px 32px;
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:20;
+}
+.office-topbar h1{font-size:18px;line-height:1.5;font-weight:600;color:var(--ink);letter-spacing:-.01em;margin:0;}
+.office-topbar .crumb{font-size:11px;line-height:1.6;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;font-weight:500;margin-bottom:4px;}
+
+.office-content{padding:28px 32px;background:#f7f8fb;flex:1;}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.kpi{
+  background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;
+}
+.kpi .lbl{font-size:11px;line-height:1.6;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:500;}
+.kpi .num{font-size:30px;line-height:1.2;font-weight:600;letter-spacing:-.02em;color:var(--ink);font-feature-settings:"tnum";}
+.kpi .delta{font-size:11px;line-height:1.6;font-weight:500;color:var(--ink-soft);}
+.kpi .accent{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--navy-900);}
+.kpi.acc-red .accent{background:var(--red);}
+.kpi.acc-warn .accent{background:var(--warn);}
+.kpi.acc-success .accent{background:var(--success);}
+
+/* dashboard branch grid (desktop) */
+@media (min-width:1024px){
+  body.office-active #office-branches{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:16px;
+  }
+  body.office-active #tab-late.card,
+  body.office-active #tab-logs.card{border-radius:14px;}
+}
+
+/* hide some chrome on desktop dashboard */
+.desktop-only{display:none;}
+@media (min-width:1024px){
+  .desktop-only{display:block;}
+  .kpi-grid.desktop-only{display:grid;}
+}
+body.office-active #kpi-strip{display:grid !important;}
+.mobile-only{display:block;}
+body.office-active .mobile-only{display:none;}
+
+/* utility */
+.hidden{display:none !important;}
+.divider{height:1px;background:var(--line);margin:8px 0;}
+
+/* ── Modal ───────────────────────────────────────────── */
+.modal-back{
+  position:fixed;inset:0;background:rgba(10,29,63,.55);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;padding:18px;z-index:60;
+}
+.modal-card{
+  width:100%;max-width:440px;
+  background:#fff;border-radius:24px;overflow:hidden;
+  box-shadow:0 32px 80px -24px rgba(10,29,63,.6);
+}
+
+/* date thin label */
+.dlabel{font-size:10px;line-height:1.6;color:var(--muted);font-weight:500;letter-spacing:.08em;text-transform:uppercase;display:block;margin-bottom:6px;}
+
+/* hover row */
+.row-hover:hover{background:#f7f8fb;}
+
+
+/* ═══════════════════════════════════════════════════════════
+   THAI-SAFE TYPOGRAPHY OVERRIDES
+   Thai script needs generous line-height to prevent vowels
+   and tone marks from clashing between rows / stacked elements.
+   ═══════════════════════════════════════════════════════════ */
+body{line-height:1.7;}
+.eyebrow{line-height:1.8 !important;padding:2px 0;}
+.h-display{line-height:1.5 !important;padding:4px 0;}
+.h-1{line-height:1.55 !important;padding:3px 0;}
+.h-2{line-height:1.6 !important;padding:2px 0;}
+h1,h2,h3,h4,h5,h6{line-height:1.5;}
+p{line-height:1.7;}
+
+.info-label{line-height:1.7 !important;padding:2px 0;}
+.info-value{line-height:1.6 !important;padding:2px 0;}
+.info-row{padding:14px 18px !important;gap:14px;}
+
+/* Login card: extra breathing room between stacked blocks */
+#view-login .card{padding:56px 36px !important;}
+#view-login .eyebrow{margin-bottom:28px !important;letter-spacing:.22em;}
+#view-login .h-1{margin-top:0 !important;margin-bottom:26px !important;line-height:2.2 !important;padding:16px 0 8px !important;}
+#view-login .h-1 + p{margin-top:0 !important;margin-bottom:36px !important;line-height:2.4 !important;padding-top:10px !important;}
+
+/* Office sidebar text safety */
+.brand-name{line-height:1.8 !important;padding:3px 0;}
+.brand-sub{line-height:1.9 !important;padding:2px 0;margin-top:6px !important;}
+.side-nav{gap:8px !important;}
+.side-nav-btn{line-height:2.0 !important;padding:16px 12px !important;}
+.side-section{padding:22px 14px 10px !important;}
+.side-foot{line-height:2.0 !important;padding:20px !important;}
+.side-foot div{margin-bottom:6px;}
+
+/* Office topbar */
+.office-topbar{padding:26px 32px !important;}
+.office-topbar h1{line-height:1.9 !important;padding:6px 0 3px !important;}
+.office-topbar .crumb{line-height:2.0 !important;padding:2px 0;margin-bottom:14px !important;}
+
+/* KPI cards */
+.kpi{padding:24px 24px !important;gap:14px !important;}
+.kpi .lbl{line-height:2.0 !important;padding:3px 0;}
+.kpi .num{line-height:1.4 !important;padding:4px 0;}
+.kpi .delta{line-height:2.0 !important;padding:3px 0;}
+
+/* Form labels */
+.dlabel{line-height:1.7 !important;padding:2px 0;margin-bottom:8px !important;}
+
+/* Tabs / chips */
+.tab-btn{line-height:1.6 !important;padding:10px 14px !important;}
+.chip{line-height:1.6 !important;padding:4px 10px !important;}
+
+/* Stat blocks on home */
+.stat{padding:14px 16px !important;}
+.stat-label{line-height:1.7 !important;padding:1px 0;display:block;}
+.stat-num{line-height:1.3 !important;padding:2px 0;display:block;}
+
+/* Result cards info row */
+#view-result .info-row{padding:13px 18px !important;}
+
+/* Generic stacked text safety inside cards */
+.card{line-height:inherit;}
+.card .eyebrow + .h-display,
+.card .eyebrow + .h-1,
+.card .eyebrow + .h-2{margin-top:6px;}
 </style>
 </head>
 <body>
 
-<!-- Loading -->
+<!-- ═══════════════ LOADING OVERLAY ═══════════════ -->
 <div id="loading-overlay" class="hidden fixed inset-0 flex flex-col items-center justify-center gap-3">
   <div class="spinner"></div>
-  <p id="loading-txt" class="text-red-600 font-bold text-sm">กำลังโหลด...</p>
+  <p id="loading-txt" class="text-xs font-medium" style="color:var(--ink-soft);letter-spacing:.04em;">กำลังโหลด...</p>
 </div>
 
-<!-- Nav -->
-<nav>
-  <div class="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-    <div class="flex items-center gap-3 cursor-pointer select-none" onclick="goHome()">
-      <div class="w-8 h-8 rounded-xl bg-red-600 flex items-center justify-center text-white font-black text-sm">A</div>
-      <span class="font-black tracking-tight text-slate-800">ATTENDANCE</span>
+<!-- ═══════════════ MOBILE SHELL ═══════════════ -->
+<div class="mobile-shell">
+
+  <!-- App bar (mobile) -->
+  <header class="appbar">
+    <div class="appbar-row">
+      <div class="brand" onclick="goHome()">
+        <div class="brand-mark"><span>M</span></div>
+        <div>
+          <div class="brand-name">Attendance</div>
+          <div class="brand-sub">Face · GPS</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <span id="nav-role" class="hidden chip dark"></span>
+        <button id="nav-signin" onclick="changeView('login')" class="text-[10px] font-semibold uppercase tracking-[.18em]" style="color:var(--muted);">Sign in</button>
+      </div>
     </div>
-    <div class="flex items-center gap-3">
-      <span id="nav-role" class="hidden badge b-red"></span>
-      <button onclick="changeView('login')" class="text-[10px] font-black text-slate-400 hover:text-red-600 transition-colors uppercase tracking-wider">Login</button>
-    </div>
-  </div>
-</nav>
+    <div class="dev-banner">DEVELOPED BY M. THATSANAPHONG</div>
+  </header>
 
-<!-- Developer Credit Bar -->
-<div style="background:#f8fafc;border-bottom:1px solid #f0f0f0;text-align:center;padding:4px 0;">
-  <span style="font-size:10px;font-weight:700;color:#94a3b8;letter-spacing:.06em;">
-    Developed by <span style="color:#b91c1c;font-weight:800;">M Thatsanaphong</span>
-  </span>
-</div>
+  <main class="shell" id="app">
 
-<!-- App -->
-<div class="max-w-3xl mx-auto px-4 py-5" id="app">
+    <!-- ════════ HOME ════════ -->
+    <section id="view-home" class="fade-up" style="padding-top:14px;">
+      <div style="margin-bottom:18px;">
+        <h1 class="h-display" style="margin-top:0;">เช็คชื่อพนักงาน <span style="color:var(--red);">ด้วยใบหน้า</span></h1>
+      </div>
 
-  <!-- ══ HOME ══ -->
-  <div id="view-home" class="fade-up flex flex-col items-center gap-5 py-10">
-    <div class="text-center">
-      <h1 class="text-2xl font-black text-slate-800">ระบบเช็คชื่อพนักงาน</h1>
-      <p class="text-xs text-slate-400 mt-1">Face Recognition + GPS</p>
-    </div>
-    <button onclick="initScan()" class="card p-10 w-full max-w-xs hover:shadow-lg hover:scale-[1.02] transition-all text-center group cursor-pointer border-2 border-transparent hover:border-red-100">
-      <div class="text-5xl mb-4 group-hover:scale-110 transition-transform">📸</div>
-      <div class="font-black text-lg">สแกนใบหน้า</div>
-      <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Employee Check-In / Out</div>
-    </button>
-    <div id="home-info" class="text-xs text-slate-400 text-center"></div>
-  </div>
+      <!-- Live clock (พร้อมวันที่) -->
+      <div class="card" style="padding:20px 22px;margin-bottom:18px;display:flex;align-items:flex-end;justify-content:space-between;">
+        <div>
+          <div id="home-date" style="font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--navy-700);text-transform:uppercase;margin-bottom:10px;line-height:1.9;"></div>
+          <div id="live-clock" class="font-mono tabular" style="font-size:42px;font-weight:600;letter-spacing:-.03em;line-height:1;color:var(--ink);">--:--</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="eyebrow" style="margin-bottom:6px;">วินาที</div>
+          <div id="live-sec" class="font-mono tabular" style="font-size:22px;font-weight:600;color:var(--red);">--</div>
+        </div>
+      </div>
 
-  <!-- ══ SCANNING ══ -->
-  <div id="view-scan" class="hidden fade-up">
-    <div class="flex justify-between items-center mb-4">
+      <!-- Big scan tile -->
+      <button onclick="initScan(event)" class="scan-tile" id="scan-tile" style="text-align:center;padding:36px 28px 32px;">
+        <div class="grain"></div>
+        <div class="glow" style="left:50%;right:auto;transform:translateX(-50%);top:-60px;"></div>
+        <div class="ripple-host"></div>
+
+        <!-- Icon + rings -->
+        <div style="position:relative;width:90px;height:90px;margin:0 auto 22px;">
+          <div style="position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);animation:tileRing 2s ease-out infinite;"></div>
+          <div style="position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);animation:tileRing 2s ease-out 1s infinite;"></div>
+          <div class="lens" style="position:absolute;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;"></div>
+        </div>
+
+        <div style="font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.3;">สแกนใบหน้า</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:10px;letter-spacing:.04em;">แตะเพื่อเริ่มเช็คอิน · เลิกงาน</div>
+      </button>
+
+      <!-- Stats row (ย้ายมาอยู่ด้านล่าง) -->
+      <div class="grid grid-cols-2 gap-3" style="margin-top:16px;">
+        <div class="stat">
+          <span class="stat-label">พนักงานทั้งหมด</span>
+          <span class="stat-num" id="home-staff-count">—</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">จำนวนสาขา</span>
+          <span class="stat-num" id="home-branch-count">—</span>
+        </div>
+      </div>
+
+      <!-- ประวัติวันนี้ -->
+      <div id="home-history" class="hidden" style="margin-top:22px;">
+        <div class="eyebrow" style="margin-bottom:8px;">ประวัติวันนี้</div>
+        <div id="home-history-list" class="space-y-1.5" style="max-height:240px;overflow-y:auto;"></div>
+      </div>
+    </section>
+
+    <!-- ════════ SCANNING ════════ -->
+    <section id="view-scan" class="hidden fade-up" style="padding-top:8px;">
+      <div class="flex justify-between items-start" style="margin-bottom:14px;">
+        <div>
+          <div class="eyebrow">Step 02 · Recognition</div>
+          <div id="scan-status" class="h-2" style="margin-top:4px;">กำลังเปิดกล้อง...</div>
+          <div id="scan-hint" class="text-xs" style="color:var(--muted);margin-top:2px;"></div>
+        </div>
+        <button onclick="goHome()" class="btn btn-ghost px-4 py-2 rounded-xl text-xs">ยกเลิก</button>
+      </div>
+      <div class="video-wrap viewfinder" style="aspect-ratio:3/4;max-height:60vh;">
+        <video id="video" autoplay muted playsinline></video>
+        <canvas id="scan-canvas"></canvas>
+        <div class="tl"></div><div class="tr"></div><div class="bl"></div><div class="br"></div>
+        <div class="absolute top-4 left-4 flex items-center gap-2" style="background:rgba(10,29,63,.5);padding:6px 10px;border-radius:8px;backdrop-filter:blur(6px);">
+          <span class="rec-dot"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#fff;letter-spacing:.18em;">REC</span>
+        </div>
+      </div>
+      <p class="text-center text-xs mt-4" style="color:var(--muted);">มองตรงเข้ากล้อง · กล้องจะตรวจอัตโนมัติ</p>
+    </section>
+
+    <!-- ════════ SCAN RESULT ════════ -->
+    <section id="view-result" class="hidden fade-up space-y-4" style="padding-top:8px;">
+
+      <div class="eyebrow">Step 03 · Verification</div>
+
+      <!-- Person card -->
+      <div class="card" style="padding:18px 20px;display:flex;align-items:center;gap:14px;">
+        <div style="width:52px;height:52px;border-radius:14px;background:var(--navy-50);display:flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid var(--line);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--navy-900);"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"/></svg>
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div id="r-name" class="h-1" style="margin:0;line-height:1.4;"></div>
+          <div id="r-homebranch" class="text-xs" style="color:var(--muted);margin-top:3px;"></div>
+        </div>
+        <div id="r-cross-badge" class="hidden"></div>
+      </div>
+
+      <!-- Info card -->
+      <div class="card" style="padding:0 20px;">
+        <!-- Loading -->
+        <div id="r-loading" class="py-7 flex flex-col items-center gap-3">
+          <div class="spinner"></div>
+          <p id="r-loading-txt" class="text-xs" style="color:var(--muted);font-weight:500;">กำลังระบุตำแหน่ง GPS...</p>
+        </div>
+
+        <!-- Loaded -->
+        <div id="r-info" class="hidden">
+          <div class="info-row">
+            <span class="info-label">สาขาที่เช็คอิน</span>
+            <div class="text-right">
+              <div id="r-branch" class="info-value">-</div>
+              <div id="r-branch-badge" class="mt-1"></div>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-label">เวลาปัจจุบัน</span>
+            <div class="text-right">
+              <div id="r-time" class="info-value font-mono tabular" style="color:var(--red);font-size:18px;"></div>
+              <div id="r-opentime" class="text-[10px] mt-1" style="color:var(--muted);"></div>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-label">สถานะเวลา</span>
+            <div id="r-late-badge"></div>
+          </div>
+          <div id="r-prev-row" class="info-row hidden">
+            <span class="info-label">ล่าสุดวันนี้</span>
+            <div id="r-prev-val" class="info-value text-right" style="font-size:12px;"></div>
+          </div>
+        </div>
+
+        <!-- No GPS -->
+        <div id="r-nogps" class="hidden py-7 text-center">
+          <div style="width:60px;height:60px;border-radius:50%;background:var(--red-50);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--red);"><path d="M12 22s-8-7.5-8-13a8 8 0 1 1 16 0c0 5.5-8 13-8 13z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          </div>
+          <p class="h-2" style="color:var(--red-700);">อยู่นอกพื้นที่ทุกสาขา</p>
+          <p class="text-xs mt-1 mb-4" style="color:var(--muted);">กรุณาอยู่ในรัศมีสาขาก่อนเช็คอิน</p>
+          <button onclick="retryGPS()" class="btn btn-soft px-6 py-2.5 rounded-xl text-sm">รีเฟรชตำแหน่ง</button>
+          <p id="r-retry-status" class="text-xs mt-3" style="color:var(--muted);"></p>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div id="r-actions" class="hidden">
+        <div id="r-btn-row" class="flex gap-3 pb-3">
+          <button id="btn-in"  onclick="prepareAction('IN')"  class="btn btn-success flex-1 py-5 rounded-2xl text-base font-semibold">เข้างาน <span style="font-family:'IBM Plex Mono',monospace;font-weight:400;opacity:.8;">→</span></button>
+          <button id="btn-out" onclick="prepareAction('OUT')" class="btn btn-warn flex-1 py-5 rounded-2xl text-base font-semibold">เลิกงาน <span style="font-family:'IBM Plex Mono',monospace;font-weight:400;opacity:.8;">→</span></button>
+        </div>
+        <!-- Confirm step -->
+        <div id="r-confirm" class="hidden card pb-3" style="padding:16px 18px;border-color:#cfe7da;background:var(--success-50);margin-bottom:8px;">
+          <p id="r-confirm-txt" class="text-sm text-center" style="font-weight:600;color:var(--ink);margin-bottom:12px;"></p>
+          <button id="btn-confirm" onclick="doConfirm()" class="btn btn-success w-full py-4 rounded-2xl font-semibold">ยืนยันอีกครั้งเพื่อบันทึก</button>
+          <button onclick="cancelAction()" class="btn btn-ghost w-full py-3 rounded-2xl text-sm mt-2">ยกเลิก</button>
+        </div>
+      </div>
+      <button onclick="goHome()" class="btn btn-ghost w-full py-3 rounded-2xl text-sm">← กลับ</button>
+    </section>
+
+    <!-- ════════ SUCCESS ════════ -->
+    <section id="view-success" class="hidden fade-up" style="padding-top:32px;text-align:center;">
+      <div class="success-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div style="margin-top:22px;">
+        <div class="eyebrow">บันทึกเรียบร้อย</div>
+        <div id="s-name" class="h-display" style="margin-top:6px;"></div>
+        <div id="s-type" class="text-sm mt-1" style="color:var(--ink-soft);"></div>
+      </div>
+      <div class="card" style="padding:0 22px;margin:24px auto 0;max-width:340px;text-align:left;">
+        <div class="info-row"><span class="info-label">เวลา</span>     <span id="s-time" class="info-value font-mono tabular"></span></div>
+        <div class="info-row"><span class="info-label">สาขา</span>     <span id="s-branch" class="info-value text-right" style="max-width:60%;"></span></div>
+        <div class="info-row"><span class="info-label">สถานะ</span>    <span id="s-status"></span></div>
+        <div id="s-cross-row" class="info-row hidden"><span class="info-label">หมายเหตุ</span><span class="chip info">ต่างสาขา</span></div>
+      </div>
+      <button onclick="goHome()" class="btn btn-primary mt-7 px-10 py-4 rounded-2xl">กลับหน้าหลัก</button>
+    </section>
+
+    <!-- ════════ MANAGER ════════ -->
+    <section id="view-manager" class="hidden fade-up space-y-5" style="padding-top:14px;">
+      <div class="card" style="padding:22px 20px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+          <div style="min-width:0;flex:1;">
+            <div class="eyebrow" style="margin-bottom:10px;">Manager · Console</div>
+            <div style="font-size:18px;font-weight:600;line-height:1.7;color:var(--ink);">จัดการพนักงาน</div>
+          </div>
+          <button onclick="goHome()" class="text-[10px] font-semibold uppercase tracking-[.16em]" style="color:var(--muted);flex-shrink:0;padding-top:2px;">Sign out</button>
+        </div>
+      </div>
+      <button onclick="changeView('register')" class="btn btn-primary w-full rounded-3xl" style="padding:22px;font-size:16px;box-shadow:0 14px 32px -18px rgba(10,29,63,.55);">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        เพิ่มพนักงานใหม่
+      </button>
+      <div class="card" style="padding:20px;">
+        <div class="eyebrow" style="margin-bottom:14px;">ลงทะเบียนล่าสุด</div>
+        <div id="mgr-list" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- ════════ REGISTER ════════ -->
+    <section id="view-register" class="hidden fade-up" style="padding-top:14px;">
+      <div class="card" style="padding:26px;max-width:480px;margin:0 auto;">
+        <!-- Step 1 -->
+        <div id="reg-s1" class="space-y-4">
+          <div class="text-center" style="margin-bottom:14px;">
+            <div class="eyebrow">Step 01 of 02</div>
+            <h2 class="h-1" style="margin-top:6px;">ข้อมูลพนักงาน</h2>
+            <div class="flex justify-center gap-2 mt-3">
+              <div style="width:36px;height:3px;background:var(--red);border-radius:2px;"></div>
+              <div style="width:36px;height:3px;background:var(--line);border-radius:2px;"></div>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <input type="text" id="reg-fname" placeholder="ชื่อ *" class="inp">
+            <input type="text" id="reg-lname" placeholder="นามสกุล *" class="inp">
+          </div>
+          <input type="text" id="reg-nick" placeholder="ชื่อเล่น *" class="inp">
+          <select id="reg-branch" class="inp"></select>
+          <button onclick="startCapture()" class="btn btn-primary w-full py-4 rounded-2xl">ถัดไป: สแกนใบหน้า →</button>
+          <button onclick="changeView('manager')" class="btn btn-ghost w-full py-3 rounded-2xl text-sm">ยกเลิก</button>
+        </div>
+
+        <!-- Step 2 -->
+        <div id="reg-s2" class="hidden space-y-4">
+          <div class="text-center">
+            <div class="eyebrow">Step 02 of 02</div>
+            <h2 class="h-1" style="margin-top:6px;">สแกนใบหน้า</h2>
+            <div class="flex justify-center gap-2 mt-3">
+              <div style="width:36px;height:3px;background:var(--success);border-radius:2px;"></div>
+              <div style="width:36px;height:3px;background:var(--red);border-radius:2px;"></div>
+            </div>
+          </div>
+
+          <div class="flex justify-center gap-3">
+            <div class="pose-dot" id="dot-0"></div>
+            <div class="pose-dot" id="dot-1"></div>
+            <div class="pose-dot" id="dot-2"></div>
+            <div class="pose-dot" id="dot-3"></div>
+            <div class="pose-dot" id="dot-4"></div>
+          </div>
+
+          <div id="pose-card" style="padding:16px;background:var(--navy-50);border:1px solid var(--line);border-radius:16px;text-align:center;">
+            <div id="pose-step" class="eyebrow" style="color:var(--red);">ท่าที่ 1/5</div>
+            <div id="pose-emoji" style="font-size:36px;margin:6px 0;">😐</div>
+            <div id="pose-label" class="h-2">หน้าตรง</div>
+            <div id="pose-hint" class="text-xs mt-1" style="color:var(--muted);">มองตรงเข้ากล้อง ไม่ก้มหรือเงย</div>
+          </div>
+
+          <div class="video-wrap viewfinder" style="aspect-ratio:3/4;max-height:46vh;">
+            <video id="video-reg" autoplay muted playsinline style="transform:scaleX(-1);"></video>
+            <div class="tl"></div><div class="tr"></div><div class="bl"></div><div class="br"></div>
+            <div id="cap-ok" class="hidden absolute inset-0 flex items-center justify-center" style="background:rgba(15,122,74,.4);">
+              <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
+            </div>
+          </div>
+
+          <div class="flex gap-3">
+            <button id="btn-cap" onclick="captureOne()" class="btn btn-primary flex-1 py-4 rounded-2xl text-sm">สแกนท่านี้</button>
+            <button id="btn-save" onclick="finalRegister()" disabled class="btn flex-1 py-4 rounded-2xl text-sm" style="background:var(--bg-2);color:var(--faint);">บันทึก</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════ LOGIN ════════ -->
+    <section id="view-login" class="hidden fade-up" style="padding-top:30px;">
+      <div class="card" style="padding:36px 28px;max-width:380px;margin:0 auto;text-align:center;">
+        <div class="eyebrow">Restricted Access</div>
+        <h2 class="h-1" style="margin-top:10px;">เข้าสู่ระบบ</h2>
+        <p style="font-size:13px;line-height:1.6;color:var(--muted);margin-top:6px;margin-bottom:24px;">สำหรับ Office หรือ Manager เท่านั้น</p>
+        <input type="password" id="pass-input" placeholder="••••••••"
+          class="inp text-center font-mono tabular" style="font-size:18px;letter-spacing:.3em;margin-bottom:14px;"
+          onkeydown="if(event.key==='Enter')doLogin()">
+        <button onclick="doLogin()" class="btn btn-primary w-full py-4 rounded-2xl">เข้าสู่ระบบ</button>
+      </div>
+    </section>
+
+    <!-- ════════ OFFICE (mobile fallback) ════════ -->
+    <section id="view-office" class="hidden fade-up" style="padding-top:14px;">
+      <!-- Visible on mobile only; on desktop the office-shell takes over -->
+      <div class="desktop-only" style="padding:40px;text-align:center;">
+        <p>กำลังโหลด Dashboard…</p>
+      </div>
+
+      <!-- mobile compact dashboard -->
+      <div class="mobile-only space-y-4" style="padding-top:14px;">
+        <div class="card" style="padding:18px 20px;">
+          <div class="eyebrow">Office Console</div>
+          <div class="h-1" style="margin-top:4px;">Dashboard</div>
+          <div id="dash-date-mobile" class="text-xs mt-1" style="color:var(--muted);"></div>
+        </div>
+        <p class="text-xs text-center" style="color:var(--muted);">หน้านี้ออกแบบเพื่อใช้งานบนคอมพิวเตอร์<br>กรุณาเปิดบนหน้าจอขนาด 1024px ขึ้นไป</p>
+        <button onclick="goHome()" class="btn btn-ghost w-full py-3 rounded-2xl text-sm">← กลับหน้าหลัก</button>
+      </div>
+    </section>
+
+  </main>
+</div><!-- /mobile-shell -->
+
+
+<!-- ═══════════════ OFFICE DASHBOARD (DESKTOP) ═══════════════ -->
+<div class="office-shell" id="office-shell">
+
+  <!-- Sidebar -->
+  <aside class="office-side">
+    <div class="brand-row">
+      <div class="brand-mark"><span>M</span></div>
       <div>
-        <div id="scan-status" class="text-sm font-bold text-slate-700"></div>
-        <div id="scan-hint"   class="text-xs text-slate-400 mt-0.5"></div>
-      </div>
-      <button onclick="goHome()" class="btn-gray px-4 py-2 rounded-xl text-xs">ยกเลิก</button>
-    </div>
-    <div class="video-wrap" style="aspect-ratio:3/4;max-height:56vh;">
-      <video id="video" autoplay muted playsinline></video>
-      <canvas id="scan-canvas"></canvas>
-      <div class="absolute top-3 right-3">
-        <div class="relative w-7 h-7 flex items-center justify-center pulse">
-          <div class="w-2 h-2 rounded-full bg-red-500"></div>
-        </div>
+        <div class="brand-name">Attendance</div>
+        <div class="brand-sub">Office Console</div>
       </div>
     </div>
-  </div>
 
-  <!-- ══ SCAN RESULT (new page) ══ -->
-  <div id="view-result" class="hidden fade-up space-y-4">
-
-    <!-- Person card -->
-    <div class="card p-5 flex items-center gap-4">
-      <div class="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">👤</div>
-      <div>
-        <div id="r-name"       class="text-xl font-black text-slate-800"></div>
-        <div id="r-homebranch" class="text-xs text-slate-400 mt-0.5"></div>
-      </div>
-      <div id="r-cross-badge" class="ml-auto hidden"></div>
-    </div>
-
-    <!-- Info card -->
-    <div class="card p-5">
-      <!-- Loading state -->
-      <div id="r-loading" class="py-6 flex flex-col items-center gap-3">
-        <div class="spinner"></div>
-        <p id="r-loading-txt" class="text-xs text-slate-400 font-semibold">กำลังระบุตำแหน่ง GPS...</p>
-      </div>
-
-      <!-- Loaded state -->
-      <div id="r-info" class="hidden">
-        <div class="info-row">
-          <span class="info-label">📍 สาขาที่เช็คอิน</span>
-          <div class="text-right"><div id="r-branch" class="info-value">-</div><div id="r-branch-badge" class="mt-1"></div></div>
-        </div>
-        <div class="info-row">
-          <span class="info-label">🕐 เวลาปัจจุบัน</span>
-          <div class="text-right"><div id="r-time" class="info-value text-red-600"></div><div id="r-opentime" class="text-[10px] text-slate-400 mt-0.5"></div></div>
-        </div>
-        <div class="info-row">
-          <span class="info-label">⏱ สถานะเวลา</span>
-          <div id="r-late-badge" class="info-value"></div>
-        </div>
-        <div id="r-prev-row" class="info-row hidden">
-          <span class="info-label">📌 เช็คอินล่าสุดวันนี้</span>
-          <div id="r-prev-val" class="info-value text-right"></div>
-        </div>
-      </div>
-
-      <!-- No GPS -->
-      <div id="r-nogps" class="hidden py-5 text-center">
-        <div class="text-3xl mb-2">📡</div>
-        <p class="text-sm font-bold text-red-600">อยู่นอกพื้นที่ทุกสาขา</p>
-        <p class="text-xs text-slate-400 mt-1 mb-4">กรุณาอยู่ในรัศมีสาขาก่อนเช็คอิน</p>
-        <button onclick="retryGPS()"
-          class="btn-gray px-6 py-2.5 rounded-xl text-sm font-bold">
-          🔄 รีเฟรชตำแหน่ง
+    <div class="side-section">
+      <div class="eyebrow" style="padding:0 12px 8px;">Overview</div>
+      <nav class="side-nav">
+        <button class="side-nav-btn active" id="side-branches" onclick="switchTab('branches')">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          ภาพรวมสาขา
         </button>
-        <p id="r-retry-status" class="text-xs text-slate-400 mt-2"></p>
-      </div>
+        <button class="side-nav-btn" id="side-absent" onclick="switchTab('absent')">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+          ยังไม่เข้างาน
+        </button>
+        <button class="side-nav-btn" id="side-late" onclick="switchTab('late')">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+          มาสาย
+        </button>
+      </nav>
     </div>
 
-    <!-- Action buttons -->
-    <div id="r-actions" class="hidden">
-      <div class="flex gap-3 pb-8">
-        <button id="btn-in"  onclick="doCheckIn()"  class="btn-green flex-1 py-5 rounded-2xl text-lg">📥 เข้างาน</button>
-        <button id="btn-out" onclick="doCheckOut()" class="btn-orange flex-1 py-5 rounded-2xl text-lg">📤 เลิกงาน</button>
-      </div>
+    <div class="side-section">
+      <div class="eyebrow" style="padding:0 12px 8px;">บริหาร</div>
+      <nav class="side-nav">
+        <button class="side-nav-btn" id="side-staff" onclick="switchTab('staff')">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="6" r="2.5"/><path d="M15 14c2.8 0 5 2.2 5 5"/></svg>
+          พนักงาน
+        </button>
+        <button class="side-nav-btn" id="side-logs" onclick="switchTab('logs')">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 4h14v16H5z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+          ประวัติ
+        </button>
+        <button class="side-nav-btn" onclick="showBranchModal()">
+          <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/></svg>
+          ตั้งค่าสาขา
+        </button>
+      </nav>
     </div>
-    <div class="pb-4">
-      <button onclick="goHome()" class="btn-gray w-full py-3 rounded-2xl text-sm">← กลับ</button>
-    </div>
-  </div>
 
-  <!-- ══ SUCCESS ══ -->
-  <div id="view-success" class="hidden fade-up flex flex-col items-center py-12 gap-5 text-center">
-    <div class="text-7xl">✅</div>
-    <div>
-      <div id="s-name" class="text-2xl font-black text-slate-800"></div>
-      <div id="s-type" class="text-sm text-slate-400 mt-1"></div>
+    <div class="side-foot">
+      <div>Developed by</div>
+      <strong>M. THATSANAPHONG</strong>
     </div>
-    <div class="card p-6 w-full max-w-xs text-left space-y-0">
-      <div class="info-row"><span class="info-label">เวลา</span>    <span id="s-time"   class="info-value"></span></div>
-      <div class="info-row"><span class="info-label">สาขา</span>    <span id="s-branch" class="info-value text-right" style="max-width:60%"></span></div>
-      <div class="info-row"><span class="info-label">สถานะ</span>   <span id="s-status"></span></div>
-      <div id="s-cross-row" class="info-row hidden"><span class="info-label">หมายเหตุ</span><span class="badge b-indigo">📌 ต่างสาขา</span></div>
-    </div>
-    <button onclick="goHome()" class="btn-red px-10 py-4 rounded-2xl shadow-lg">กลับหน้าหลัก</button>
-  </div>
+  </aside>
 
-  <!-- ══ OFFICE DASHBOARD ══ -->
-  <div id="view-office" class="hidden fade-up space-y-5">
-
-    <div class="card p-5 flex justify-between items-center" style="border-left:4px solid #cc0000;">
+  <!-- Main -->
+  <div class="office-main">
+    <!-- Top bar -->
+    <header class="office-topbar">
       <div>
-        <div class="font-black text-lg">Office Dashboard</div>
-        <div id="dash-date" class="text-[10px] text-slate-400 uppercase tracking-widest mt-0.5"></div>
+        <div class="crumb">Office · Dashboard</div>
+        <h1 id="office-title">ภาพรวมสาขา</h1>
       </div>
-      <div class="flex gap-2 items-center">
-        <button onclick="loadOfficeDash()" class="btn-gray px-3 py-2 rounded-xl text-xs">🔄</button>
-        <button onclick="goHome()" class="text-[10px] font-black text-slate-400 uppercase">Logout</button>
+      <div class="flex items-center gap-3">
+        <span id="dash-date" class="text-xs" style="color:var(--muted);font-weight:500;letter-spacing:.04em;"></span>
+        <button onclick="loadOfficeDash()" class="btn btn-ghost px-4 py-2 rounded-xl text-xs">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 1-9 9 9 9 0 0 1-7-3.3M3 12a9 9 0 0 1 9-9 9 9 0 0 1 7 3.3"/><path d="M21 4v5h-5M3 20v-5h5"/></svg>
+          รีเฟรช
+        </button>
+        <button onclick="goHome()" class="btn btn-ghost px-4 py-2 rounded-xl text-xs">ออกจากระบบ</button>
       </div>
-    </div>
+    </header>
 
-    <!-- Tabs -->
-    <div class="card p-1.5 flex gap-1" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
-      <button class="tab-btn active" onclick="switchTab('branches')" id="tab-branches-btn">📊 สาขา</button>
-      <button class="tab-btn"        onclick="switchTab('absent')"   id="tab-absent-btn">❌ ยังไม่มา</button>
-      <button class="tab-btn"        onclick="switchTab('late')"     id="tab-late-btn">⏰ มาสาย</button>
-      <button class="tab-btn"        onclick="switchTab('staff')"    id="tab-staff-btn">👥 พนักงาน</button>
-      <button class="tab-btn"        onclick="switchTab('logs')"     id="tab-logs-btn">📋 ประวัติ</button>
-    </div>
+    <div class="office-content">
 
-    <!-- TAB: Branches -->
-    <div id="tab-branches">
-      <div id="office-branches" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-    </div>
-
-    <!-- TAB: Absent -->
-    <div id="tab-absent" class="hidden">
-      <div class="card p-3 flex flex-wrap gap-2 items-center justify-between mb-3">
-        <span class="font-black text-sm">❌ ยังไม่มางาน</span>
-        <div class="flex items-center gap-2">
-          <input type="date" id="absent-date"
-            class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 outline-none bg-white"
-            style="font-family:inherit;font-weight:600;"
-            onchange="renderAbsentByDate()">
-          <button onclick="document.getElementById('absent-date').value='';renderAbsentByDate();"
-            class="btn-gray px-2 py-1.5 rounded-lg text-xs">วันนี้</button>
-        </div>
+      <!-- KPI strip (desktop only, branches tab) -->
+      <div id="kpi-strip" class="kpi-grid desktop-only" style="margin-bottom:22px;">
+        <div class="kpi"><div class="accent"></div><span class="lbl">วันนี้ มาแล้ว</span><span class="num tabular" id="kpi-present">—</span><span class="delta">จาก <span id="kpi-total" class="tabular">—</span> คน</span></div>
+        <div class="kpi acc-red"><div class="accent"></div><span class="lbl">ยังไม่เข้างาน</span><span class="num tabular" id="kpi-absent">—</span><span class="delta" id="kpi-absent-pct">—</span></div>
+        <div class="kpi acc-warn"><div class="accent"></div><span class="lbl">มาสาย</span><span class="num tabular" id="kpi-late">—</span><span class="delta" id="kpi-late-detail">รวมทุกสาขา</span></div>
+        <div class="kpi acc-success"><div class="accent"></div><span class="lbl">สาขาครบ</span><span class="num tabular" id="kpi-full">—</span><span class="delta" id="kpi-branches">จาก <span class="tabular">—</span> สาขา</span></div>
       </div>
-      <div id="absent-content" class="space-y-3"></div>
-    </div>
 
-    <!-- TAB: Late -->
-    <div id="tab-late" class="hidden card overflow-hidden">
-      <div class="p-4 border-b border-slate-100 flex flex-wrap gap-2 justify-between items-center">
-        <div class="flex items-center gap-2">
-          <span class="font-black text-sm">⏰ มาสาย</span>
-          <span id="late-count" class="badge b-orange">0 คน</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <input type="date" id="late-date"
-            class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 outline-none bg-white"
-            style="font-family:inherit;font-weight:600;"
-            onchange="renderLateByDate()">
-          <button onclick="document.getElementById('late-date').value='';renderLateByDate();"
-            class="btn-gray px-2 py-1.5 rounded-lg text-xs">วันนี้</button>
-          <button onclick="copyLateList()" class="btn-gray px-3 py-1.5 rounded-xl text-xs font-bold">📋 คัดลอก</button>
-        </div>
+      <!-- mobile-only tab pills (below 1024) -->
+      <div class="mobile-only card flex gap-1 mb-3" style="padding:6px;overflow-x:auto;">
+        <button class="tab-btn active" onclick="switchTab('branches')" id="tab-branches-btn">สาขา</button>
+        <button class="tab-btn" onclick="switchTab('absent')" id="tab-absent-btn">ยังไม่เข้างาน</button>
+        <button class="tab-btn" onclick="switchTab('late')" id="tab-late-btn">มาสาย</button>
+        <button class="tab-btn" onclick="switchTab('staff')" id="tab-staff-btn">พนักงาน</button>
+        <button class="tab-btn" onclick="switchTab('logs')" id="tab-logs-btn">ประวัติ</button>
       </div>
-      <div id="late-list" class="divide-y divide-slate-50 max-h-[60vh] overflow-y-auto"></div>
-    </div>
 
-    <!-- TAB: Staff -->
-    <div id="tab-staff" class="hidden space-y-3">
-      <!-- ส่วนเตือน GPS น่าสงสัย -->
-      <div id="suspicious-section"></div>
-      <!-- รายชื่อพนักงาน -->
-      <div class="card overflow-hidden">
-        <table class="w-full">
-          <thead class="bg-slate-50">
-            <tr>
-              <th class="text-left text-[9px] text-slate-400 uppercase tracking-widest p-4">รายชื่อ</th>
-              <th class="text-left text-[9px] text-slate-400 uppercase tracking-widest p-4">สาขา</th>
-              <th class="text-right text-[9px] text-slate-400 uppercase tracking-widest p-4">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody id="office-staff-body" class="divide-y divide-slate-50"></tbody>
-        </table>
+      <!-- Branches -->
+      <div id="tab-branches">
+        <div id="office-branches" class="grid grid-cols-1 gap-3"></div>
       </div>
-    </div>
 
-    <!-- TAB: Logs -->
-    <div id="tab-logs" class="hidden card overflow-hidden">
-      <div class="p-4 border-b border-slate-50 flex flex-wrap gap-2 items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="font-black text-sm">📋 ประวัติ</span>
-          <span id="log-count" class="badge b-gray"></span>
-        </div>
-        <div class="flex items-center gap-2">
-          <input type="date" id="log-date"
-            class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 outline-none bg-white"
-            style="font-family:inherit;font-weight:600;"
-            onchange="renderLogs()">
-          <button onclick="document.getElementById('log-date').value='';renderLogs();" class="btn-gray px-2 py-1.5 rounded-lg text-xs">วันนี้</button>
-        </div>
-      </div>
-      <div id="office-logs" class="divide-y divide-slate-50 max-h-[60vh] overflow-y-auto"></div>
-    </div>
-
-    <div class="flex justify-center pb-8">
-      <button onclick="showBranchModal()" class="btn-red px-8 py-4 rounded-2xl text-xs shadow-lg">➕ ตั้งค่าสาขา</button>
-    </div>
-  </div>
-
-  <!-- ══ MANAGER ══ -->
-  <div id="view-manager" class="hidden fade-up space-y-5">
-    <div class="card p-5 flex justify-between items-center" style="border-left:4px solid #334155;">
-      <div class="font-black text-lg">Manager Panel</div>
-      <button onclick="goHome()" class="text-[10px] text-slate-400 font-black uppercase">Logout</button>
-    </div>
-    <button onclick="changeView('register')" class="btn-red w-full py-7 rounded-3xl font-black text-xl shadow-xl flex items-center justify-center gap-3">
-      <span class="text-2xl">➕</span> เพิ่มพนักงานใหม่
-    </button>
-    <div class="card p-5">
-      <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">ลงทะเบียนล่าสุด</div>
-      <div id="mgr-list" class="space-y-2"></div>
-    </div>
-  </div>
-
-  <!-- ══ REGISTER ══ -->
-  <div id="view-register" class="hidden fade-up">
-    <div class="card p-7 max-w-lg mx-auto">
-      <!-- Step 1 -->
-      <div id="reg-s1" class="space-y-4">
-        <div class="text-center mb-5">
-          <div class="text-4xl mb-2">👤</div>
-          <h2 class="text-xl font-black">ลงทะเบียนพนักงานใหม่</h2>
-          <div class="flex justify-center gap-2 mt-3">
-            <div class="w-8 h-1.5 bg-red-600 rounded-full"></div>
-            <div class="w-8 h-1.5 bg-slate-200 rounded-full"></div>
+      <!-- Absent -->
+      <div id="tab-absent" class="hidden">
+        <div class="card" style="padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div class="h-2">ยังไม่เข้างาน</div>
+          <div class="flex items-center gap-2">
+            <input type="date" id="absent-date" onchange="renderAbsentByDate()">
+            <button onclick="document.getElementById('absent-date').value='';renderAbsentByDate();" class="btn btn-ghost px-3 py-1.5 rounded-lg text-xs">วันนี้</button>
           </div>
         </div>
-        <div class="grid grid-cols-2 gap-3">
-          <input type="text" id="reg-fname" placeholder="ชื่อ *"       class="inp">
-          <input type="text" id="reg-lname" placeholder="นามสกุล *"    class="inp">
-        </div>
-        <input type="text" id="reg-nick"  placeholder="ชื่อเล่น *"     class="inp">
-        <select id="reg-branch" class="inp"></select>
-        <button onclick="startCapture()" class="btn-red w-full py-5 rounded-2xl">ถัดไป: สแกนใบหน้า →</button>
-        <button onclick="changeView('manager')" class="btn-gray w-full py-3 rounded-2xl text-sm">ยกเลิก</button>
+        <div id="absent-content" class="space-y-3"></div>
       </div>
-      <!-- Step 2: Guided pose capture -->
-      <div id="reg-s2" class="hidden space-y-4">
-        <div class="text-center">
-          <h2 class="text-xl font-black">สแกนใบหน้า</h2>
-          <div class="flex justify-center gap-2 mt-2">
-            <div class="w-8 h-1.5 bg-slate-200 rounded-full"></div>
-            <div class="w-8 h-1.5 bg-red-600 rounded-full"></div>
+
+      <!-- Late -->
+      <div id="tab-late" class="hidden card overflow-hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;">
+          <div class="flex items-center gap-3">
+            <span class="h-2">มาสาย</span>
+            <span id="late-count" class="chip warn">0 คน</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="date" id="late-date" onchange="renderLateByDate()">
+            <button onclick="document.getElementById('late-date').value='';renderLateByDate();" class="btn btn-ghost px-3 py-1.5 rounded-lg text-xs">วันนี้</button>
+            <button onclick="copyLateList()" class="btn btn-soft px-3 py-1.5 rounded-lg text-xs">คัดลอก</button>
           </div>
         </div>
+        <div id="late-list" style="max-height:65vh;overflow-y:auto;"></div>
+      </div>
 
-        <!-- Pose progress dots -->
-        <div class="flex justify-center gap-3" id="reg-dots">
-          <div class="w-4 h-4 rounded-full bg-slate-200 transition-all" id="dot-0"></div>
-          <div class="w-4 h-4 rounded-full bg-slate-200 transition-all" id="dot-1"></div>
-          <div class="w-4 h-4 rounded-full bg-slate-200 transition-all" id="dot-2"></div>
-          <div class="w-4 h-4 rounded-full bg-slate-200 transition-all" id="dot-3"></div>
-          <div class="w-4 h-4 rounded-full bg-slate-200 transition-all" id="dot-4"></div>
-        </div>
-
-        <!-- Pose instruction card -->
-        <div id="pose-card" class="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-100 rounded-2xl p-4 text-center">
-          <div id="pose-step" class="text-[10px] text-red-400 font-black uppercase tracking-widest mb-1">ท่าที่ 1/5</div>
-          <div id="pose-emoji" class="text-4xl my-2">😐</div>
-          <div id="pose-label" class="text-base font-black text-slate-800 mb-1">หน้าตรง</div>
-          <div id="pose-hint"  class="text-xs text-slate-500">มองตรงเข้ากล้อง ไม่ก้มหรือเงย</div>
-        </div>
-
-        <div class="video-wrap" style="aspect-ratio:3/4;max-height:46vh;">
-          <video id="video-reg" autoplay muted playsinline style="transform:scaleX(-1);"></video>
-          <!-- Check overlay after capture -->
-          <div id="cap-ok" class="hidden absolute inset-0 bg-green-500/30 flex items-center justify-center">
-            <div class="text-7xl">✅</div>
-          </div>
-        </div>
-
-        <div class="flex gap-3">
-          <button id="btn-cap"  onclick="captureOne()" class="flex-1 btn-red py-5 rounded-2xl text-base">📸 สแกนท่านี้</button>
-          <button id="btn-save" onclick="finalRegister()" disabled class="flex-1 py-5 rounded-2xl font-black text-base bg-slate-100 text-slate-300 cursor-not-allowed">💾 บันทึก</button>
+      <!-- Staff -->
+      <div id="tab-staff" class="hidden space-y-3">
+        <div id="suspicious-section"></div>
+        <div class="card overflow-hidden">
+          <table class="w-full">
+            <thead style="background:#f7f8fb;">
+              <tr>
+                <th class="text-left p-4 eyebrow">รายชื่อ</th>
+                <th class="text-left p-4 eyebrow">สาขา</th>
+                <th class="text-right p-4 eyebrow">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="office-staff-body"></tbody>
+          </table>
         </div>
       </div>
+
+      <!-- Logs -->
+      <div id="tab-logs" class="hidden card overflow-hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
+          <div class="flex items-center gap-3">
+            <span class="h-2">ประวัติการเช็คชื่อ</span>
+            <span id="log-count" class="chip neutral"></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="date" id="log-date" onchange="renderLogs()">
+            <button onclick="document.getElementById('log-date').value='';renderLogs();" class="btn btn-ghost px-3 py-1.5 rounded-lg text-xs">วันนี้</button>
+          </div>
+        </div>
+        <div id="office-logs" style="max-height:65vh;overflow-y:auto;"></div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /office-shell -->
+
+
+<!-- ═══════════════ EMPLOYEE HISTORY MODAL ═══════════════ -->
+<div id="modal-emp-history" class="hidden modal-back" style="align-items:flex-end;" onclick="if(event.target===this)closeEmpHistory()">
+  <div class="modal-card" style="max-width:520px;border-bottom-left-radius:0;border-bottom-right-radius:0;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div>
+        <div id="eh-name" class="h-2"></div>
+        <div class="eyebrow" style="margin-top:3px;">ประวัติการเข้า–ออกงาน</div>
+      </div>
+      <button onclick="closeEmpHistory()" class="btn btn-ghost px-4 py-2 rounded-xl text-xs">ปิด</button>
     </div>
+    <div id="eh-list" class="space-y-3" style="overflow-y:auto;padding:16px 18px;"></div>
   </div>
+</div>
 
-  <!-- ══ LOGIN ══ -->
-  <div id="view-login" class="hidden fade-up">
-    <div class="card p-10 max-w-sm mx-auto text-center">
-      <div class="text-4xl mb-4">🔐</div>
-      <h2 class="text-xl font-black mb-6">เข้าสู่ระบบ</h2>
-      <input type="password" id="pass-input" placeholder="รหัสผ่าน"
-        class="inp text-center text-2xl mb-4"
-        onkeydown="if(event.key==='Enter')doLogin()">
-      <button onclick="doLogin()" class="btn-red w-full py-5 rounded-2xl">เข้าสู่ระบบ</button>
-    </div>
-  </div>
-
-</div><!-- /app -->
-
-<!-- Branch Modal -->
-<div id="modal-branch" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-  <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-y-auto max-h-[92vh]">
-    <div class="p-7">
-      <h3 class="text-xl font-black mb-5">⚙️ ตั้งค่าสาขา</h3>
+<!-- ═══════════════ BRANCH MODAL ═══════════════ -->
+<div id="modal-branch" class="hidden modal-back">
+  <div class="modal-card">
+    <div style="padding:32px 28px;">
+      <div class="eyebrow" style="margin-bottom:16px;">Settings</div>
+      <h3 class="h-1" style="margin:0 0 22px;line-height:1.9;padding-top:10px;">ตั้งค่าสาขา</h3>
       <div class="space-y-3">
-
-        <!-- ID + ชื่อสาขา -->
         <input type="text" id="b-id"       placeholder="ID สาขา เช่น B01"   class="inp inp-sm">
-        <input type="text" id="b-name"     placeholder="ชื่อสาขา / ห้าง"     class="inp inp-sm">
-        <input type="text" id="b-province" placeholder="จังหวัด"               class="inp inp-sm">
-
-        <!-- จำนวนพนักงาน + ขั้นต่ำ (ติดกัน) -->
+        <input type="text" id="b-name"     placeholder="ชื่อสาขา / ห้าง"    class="inp inp-sm">
+        <input type="text" id="b-province" placeholder="จังหวัด"            class="inp inp-sm">
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-[10px] text-slate-400 font-bold uppercase mb-1 block">พนักงานทั้งหมด</label>
+            <label class="dlabel">พนักงานทั้งหมด</label>
             <input type="number" id="b-total" placeholder="เช่น 5" class="inp inp-sm">
           </div>
           <div>
-            <label class="text-[10px] text-slate-400 font-bold uppercase mb-1 block">ขั้นต่ำ (แสดงสี)</label>
-            <input type="number" id="b-min"   placeholder="เช่น 3" class="inp inp-sm">
+            <label class="dlabel">ขั้นต่ำ</label>
+            <input type="number" id="b-min" placeholder="เช่น 3" class="inp inp-sm">
           </div>
         </div>
-        <p class="text-[10px] text-slate-400 -mt-1">🟢 ครบทุกคน &nbsp;🟡 ≥ขั้นต่ำ &nbsp;🔴 &lt;ขั้นต่ำ</p>
-
-        <!-- เวลาเปิด-ปิด (time picker) -->
+        <p class="text-[10px]" style="color:var(--muted);margin-top:-4px;">ครบทุกคน · ถึงขั้นต่ำ · ต่ำกว่าขั้นต่ำ</p>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-[10px] text-slate-400 font-bold uppercase mb-1 block">🟢 เวลาเปิด / เข้างาน</label>
-            <input type="time" id="b-open"  class="inp inp-sm" style="cursor:pointer;">
+            <label class="dlabel">เวลาเข้างาน</label>
+            <input type="time" id="b-open" class="inp inp-sm" style="cursor:pointer;">
           </div>
           <div>
-            <label class="text-[10px] text-slate-400 font-bold uppercase mb-1 block">🔴 เวลาปิด / เลิกงาน</label>
+            <label class="dlabel">เวลาเลิกงาน</label>
             <input type="time" id="b-close" class="inp inp-sm" style="cursor:pointer;">
           </div>
         </div>
-
-        <!-- GPS -->
         <div class="grid grid-cols-2 gap-3">
-          <input type="text" id="b-lat" placeholder="Latitude"  class="inp inp-sm">
+          <input type="text" id="b-lat" placeholder="Latitude" class="inp inp-sm">
           <input type="text" id="b-lng" placeholder="Longitude" class="inp inp-sm">
         </div>
         <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="text-[10px] text-slate-400 font-bold uppercase mb-1 block">รัศมี (km)</label>
+            <label class="dlabel">รัศมี (km)</label>
             <input type="number" id="b-radius" value="0.5" step="0.05" class="inp inp-sm">
           </div>
           <div class="flex items-end">
-            <button onclick="getMyLoc()" class="btn-gray w-full py-2.5 rounded-xl text-xs font-bold">📍 ตำแหน่งฉัน</button>
+            <button onclick="getMyLoc()" class="btn btn-soft w-full py-2.5 rounded-xl text-xs">ตำแหน่งฉัน</button>
           </div>
         </div>
-
       </div>
       <div class="flex gap-3 mt-6">
-        <button onclick="saveBranchModal()" class="flex-1 btn-red py-4 rounded-2xl">บันทึก</button>
-        <button onclick="closeBranchModal()" class="flex-1 btn-gray py-4 rounded-2xl">ปิด</button>
+        <button onclick="saveBranchModal()" class="btn btn-primary flex-1 py-3 rounded-2xl">บันทึก</button>
+        <button onclick="closeBranchModal()" class="btn btn-ghost flex-1 py-3 rounded-2xl">ปิด</button>
       </div>
     </div>
   </div>
 </div>
 
 <!-- Toast -->
-<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl font-bold text-sm text-white shadow-2xl z-[9999] transition-all"></div>
+<div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl text-sm text-white shadow-2xl z-[9999]"></div>
 
 <script>
 // ══════════════════════════════════════════════════════════════
-// CONFIG — แก้ URL ด้านล่างเป็น Apps Script ของคุณ
+// CONFIG — DO NOT CHANGE THE LINK
 // ══════════════════════════════════════════════════════════════
 const API_URL = "https://script.google.com/macros/s/AKfycbx4qQ0qGy7FoIQhxuKk1IuB18zlRGB7st6sAt8OWkO7Gc2uzZJm48t5fNPf5xuWnSCrEw/exec";
 
@@ -534,19 +1176,26 @@ let detUser         = null;
 let detBranch       = null;
 let detGps          = null;
 let todayStatus     = null;
-let addFaceMode   = false;
-let addFaceTarget = '';
+let addFaceMode     = false;
+let addFaceTarget   = '';
 let tempDescs       = [];
 let dashData        = null;
 let currentPose     = 0;
+let currentTab      = 'branches';
+let pendingAction   = null;
 
 const POSES = [
-  { step:'1/5', label:'หน้าตรง',        emoji:'😐', hint:'มองตรงเข้ากล้อง ไม่ก้มหรือเงย' },
+  { step:'1/5', label:'หน้าตรง',         emoji:'😐', hint:'มองตรงเข้ากล้อง ไม่ก้มหรือเงย' },
   { step:'2/5', label:'หันซ้ายเล็กน้อย', emoji:'↖️', hint:'หันหน้าไปทางซ้ายประมาณ 20 องศา' },
-  { step:'3/5', label:'หันขวาเล็กน้อย', emoji:'↗️', hint:'หันหน้าไปทางขวาประมาณ 20 องศา' },
+  { step:'3/5', label:'หันขวาเล็กน้อย',  emoji:'↗️', hint:'หันหน้าไปทางขวาประมาณ 20 องศา' },
   { step:'4/5', label:'ก้มหน้าเล็กน้อย', emoji:'⬇️', hint:'ก้มหน้าลงเล็กน้อย มองต่ำกว่ากล้อง' },
   { step:'5/5', label:'เงยหน้าเล็กน้อย', emoji:'⬆️', hint:'เงยหน้าขึ้นเล็กน้อย มองสูงกว่ากล้อง' },
 ];
+
+const TAB_TITLES = {
+  branches:'ภาพรวมสาขา', absent:'ยังไม่เข้างาน', late:'มาสาย',
+  staff:'พนักงาน', logs:'ประวัติการเช็คชื่อ'
+};
 
 // ── Helpers ────────────────────────────────────────────────────
 function loading(show, txt = 'กำลังโหลด...') {
@@ -556,29 +1205,50 @@ function loading(show, txt = 'กำลังโหลด...') {
 let toastTimer;
 function toast(msg, type = 'info') {
   const el = document.getElementById('toast');
-  const colors = { info:'bg-slate-800', success:'bg-emerald-600', error:'bg-red-600', warn:'bg-amber-500' };
-  el.className = `fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 rounded-2xl font-bold text-sm text-white shadow-2xl z-[9999] ${colors[type]}`;
+  const colors = { info:'#0a1d3f', success:'#0f7a4a', error:'#cc0000', warn:'#b96b00' };
+  el.style.background = colors[type] || colors.info;
+  el.className = 'fixed bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 rounded-xl text-sm text-white shadow-2xl z-[9999] font-medium';
   el.textContent = msg;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.className = el.className + ' opacity-0', 2200);
-  setTimeout(() => el.className = 'hidden', 2700);
+  toastTimer = setTimeout(() => el.classList.add('hidden'), 2500);
 }
 function changeView(id) {
-  document.querySelectorAll('#app > div').forEach(v => v.classList.add('hidden'));
+  document.querySelectorAll('#app > section').forEach(v => v.classList.add('hidden'));
   document.getElementById('view-' + id)?.classList.remove('hidden');
-  // refresh สาขาทุกครั้งที่เปิดหน้าลงทะเบียน
+  document.body.classList.toggle('office-active', id === 'office');
+  window.scrollTo(0, 0);
   if (id === 'register') updateBranchDropdown();
 }
 function goHome() {
   stopCam();
   changeView('home');
   document.getElementById('nav-role').classList.add('hidden');
+  document.getElementById('nav-signin')?.classList.remove('hidden');
+  document.body.classList.remove('office-active');
+  loadHomeHistory();
 }
 function stopCam() {
   currentStream?.getTracks().forEach(t => t.stop());
   currentStream = null;
   clearInterval(scanTimer); scanTimer = null;
 }
+
+// Ripple animation on scan tile
+document.addEventListener('click', e => {
+  const tile = e.target.closest('.scan-tile');
+  if (!tile) return;
+  const host = tile.querySelector('.ripple-host');
+  if (!host) return;
+  const rect = tile.getBoundingClientRect();
+  const r = document.createElement('span');
+  r.className = 'ripple';
+  const size = Math.max(rect.width, rect.height);
+  r.style.width = r.style.height = size + 'px';
+  r.style.left = (e.clientX - rect.left - size/2) + 'px';
+  r.style.top  = (e.clientY - rect.top  - size/2) + 'px';
+  host.appendChild(r);
+  setTimeout(() => r.remove(), 700);
+});
 
 // ── API ────────────────────────────────────────────────────────
 async function api(action, data = {}) {
@@ -590,14 +1260,13 @@ async function api(action, data = {}) {
 
 // ── Init ───────────────────────────────────────────────────────
 window.onload = async () => {
-  // ── Register Service Worker (cache models สำหรับครั้งถัดไป) ──
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
+  startClock();
+  paintHomeDate();
 
   loading(true, 'กำลังโหลดข้อมูล...');
-
-  // โหลด API data และ AI model พร้อมกัน (parallel)
   const [d] = await Promise.all([
     api('getInitialData'),
     loadFaceModels()
@@ -606,26 +1275,47 @@ window.onload = async () => {
   branches         = d.branches         || [];
   staffDescriptors = d.staffDescriptors || [];
   staffBranches    = d.staffBranches    || {};
-
-  // ── สำคัญ: เรียก buildMatcher หลัง staffDescriptors โหลดเสร็จแล้ว ──
   buildMatcher();
 
   document.getElementById('reg-branch').innerHTML =
     '<option value="">-- เลือกสาขาหลัก --</option>' +
     branches.map(b => `<option value="${b.id}">${b.name} (${b.id})</option>`).join('');
 
-  const cnt = Object.keys(staffBranches).length;
-  document.getElementById('home-info').textContent =
-    cnt ? `${cnt} พนักงาน · ${branches.length} สาขา` : 'ยังไม่มีข้อมูลพนักงาน';
+  document.getElementById('home-staff-count').textContent  = Object.keys(staffBranches).length || '0';
+  document.getElementById('home-branch-count').textContent = branches.length || '0';
 
   loading(false);
+  loadHomeHistory();
 };
 
-// แยก model loading ออกมา (ไม่เรียก buildMatcher ที่นี่ — รอ data โหลดก่อน)
+function startClock() {
+  function tick() {
+    const n = new Date();
+    const hh = n.getHours().toString().padStart(2,'0');
+    const mm = n.getMinutes().toString().padStart(2,'0');
+    const ss = n.getSeconds().toString().padStart(2,'0');
+    const c = document.getElementById('live-clock');
+    const s = document.getElementById('live-sec');
+    if (c) c.textContent = `${hh}:${mm}`;
+    if (s) s.textContent = ss;
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+function paintHomeDate() {
+  const n = new Date();
+  const days = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์'];
+  const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const txt = `${days[n.getDay()]} · ${n.getDate()} ${months[n.getMonth()]} ${n.getFullYear()+543}`;
+  const el = document.getElementById('home-date');
+  if (el) el.textContent = txt;
+}
+
 async function loadFaceModels() {
   const M = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
   try {
-    loading(true, '⚡ โหลด AI Model... (ครั้งแรกช้า ครั้งต่อไปเร็ว)');
+    loading(true, 'กำลังโหลด⚡ AI Model...');
     await Promise.all([
       faceapi.nets.ssdMobilenetv1.loadFromUri(M),
       faceapi.nets.faceLandmark68Net.loadFromUri(M),
@@ -639,7 +1329,7 @@ async function loadFaceModels() {
 
 function buildMatcher() {
   if (!staffDescriptors.length) { faceMatcher = null; return; }
-  const names   = [...new Set(staffDescriptors.map(s => s.name))];
+  const names = [...new Set(staffDescriptors.map(s => s.name))];
   const labeled = names.map(n => new faceapi.LabeledFaceDescriptors(n,
     staffDescriptors.filter(s => s.name === n).map(s => new Float32Array(s.descriptor))
   ));
@@ -656,6 +1346,7 @@ async function doLogin() {
   const badge = document.getElementById('nav-role');
   badge.textContent = r.role === 'office' ? 'OFFICE' : 'MANAGER';
   badge.classList.remove('hidden');
+  document.getElementById('nav-signin').classList.add('hidden');
   if (r.role === 'office')  { await loadOfficeDash(); changeView('office'); }
   else                      { await loadMgrDash();    changeView('manager'); }
 }
@@ -676,7 +1367,7 @@ async function initScan() {
     video.srcObject = currentStream;
     await new Promise(r => video.onloadedmetadata = r);
 
-    document.getElementById('scan-status').textContent = '🔍 กำลังสแกนใบหน้า...';
+    document.getElementById('scan-status').textContent = 'กำลังสแกนใบหน้า';
     document.getElementById('scan-hint').textContent   = 'หันหน้าตรงเข้าหากล้อง';
 
     const canvas = document.getElementById('scan-canvas');
@@ -696,21 +1387,21 @@ async function initScan() {
       if (!det) { document.getElementById('scan-hint').textContent = 'หันหน้าตรงเข้าหากล้อง'; return; }
 
       const box = det.detection.box;
-      ctx.strokeStyle = '#22c55e'; ctx.lineWidth = 3;
+      ctx.strokeStyle = '#0f7a4a'; ctx.lineWidth = 3;
       ctx.beginPath(); ctx.roundRect(box.x, box.y, box.width, box.height, 10); ctx.stroke();
 
       const match = faceMatcher.findBestMatch(det.descriptor);
       if (match.label === 'unknown') {
-        ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
+        ctx.strokeStyle = '#b96b00'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.roundRect(box.x, box.y, box.width, box.height, 10); ctx.stroke();
         document.getElementById('scan-hint').textContent = 'ไม่พบใบหน้าที่ลงทะเบียน';
         return;
       }
 
-      // Draw name label
-      ctx.fillStyle = 'rgba(22,163,74,0.88)';
+      ctx.fillStyle = 'rgba(15,122,74,.92)';
       ctx.fillRect(box.x, box.y - 30, box.width, 30);
-      ctx.fillStyle = '#fff'; ctx.font = 'bold 14px Sarabun,sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.font = '600 14px "IBM Plex Sans Thai",sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(match.label, box.x + box.width/2, box.y - 10);
 
@@ -727,62 +1418,51 @@ async function initScan() {
 async function showResultPage() {
   changeView('result');
 
-  // Show name immediately
   document.getElementById('r-name').textContent = detUser;
-  const homeId   = staffBranches[detUser] || '';
-  const homeBr   = branches.find(b => b.id === homeId);
+  const homeId = staffBranches[detUser] || '';
+  const homeBr = branches.find(b => b.id === homeId);
   document.getElementById('r-homebranch').textContent =
-    homeBr ? `สาขาหลัก: ${homeBr.name}` : `สาขาหลัก: ${homeId || 'ไม่ระบุ'}`;
+    homeBr ? `สาขาหลัก · ${homeBr.name}` : `สาขาหลัก · ${homeId || 'ไม่ระบุ'}`;
   document.getElementById('r-cross-badge').classList.add('hidden');
 
-  // Reset info area
   document.getElementById('r-loading').classList.remove('hidden');
   document.getElementById('r-info').classList.add('hidden');
   document.getElementById('r-nogps').classList.add('hidden');
   document.getElementById('r-actions').classList.add('hidden');
   document.getElementById('r-loading-txt').textContent = 'กำลังระบุตำแหน่ง GPS...';
 
-  // Parallel: GPS + Today Status
+  // Reset confirm state
+  pendingAction = null;
+  document.getElementById('r-confirm').classList.add('hidden');
+  document.getElementById('r-btn-row').classList.remove('hidden');
+
   const [gpsResult, statusResult] = await Promise.all([
     getGPS(),
     api('checkTodayStatus', { name: detUser })
   ]);
-
   todayStatus = statusResult;
-
-  // Update loading text
   document.getElementById('r-loading-txt').textContent = 'กำลังประมวลผล...';
 
-  // Find branch from GPS
   if (gpsResult) {
-    detGps    = gpsResult;
+    detGps = gpsResult;
     detBranch = branches.find(b => getDist(detGps.lat, detGps.lng, b.lat, b.lng) <= b.radius) || null;
   }
 
-  // Show info
   document.getElementById('r-loading').classList.add('hidden');
 
-  if (!detBranch) {
-    document.getElementById('r-nogps').classList.remove('hidden');
-    return; // ไม่แสดงปุ่ม
-  }
+  if (!detBranch) { document.getElementById('r-nogps').classList.remove('hidden'); return; }
 
-  // Fill info
   document.getElementById('r-info').classList.remove('hidden');
-  document.getElementById('r-branch').textContent = detBranch.name + ' (' + detBranch.province + ')';
+  document.getElementById('r-branch').textContent = detBranch.name + ' · ' + detBranch.province;
+  document.getElementById('r-branch-badge').innerHTML = `<span class="chip ok">ในพื้นที่</span>`;
 
-  const inArea = true;
-  document.getElementById('r-branch-badge').innerHTML = `<span class="badge b-green">✓ ในพื้นที่</span>`;
-
-  // Cross-branch
   const isCross = homeId && homeId !== detBranch.id;
   if (isCross) {
     const badge = document.getElementById('r-cross-badge');
-    badge.innerHTML = `<span class="badge b-indigo">ต่างสาขา</span>`;
+    badge.innerHTML = `<span class="chip info">ต่างสาขา</span>`;
     badge.classList.remove('hidden');
   }
 
-  // Time + Late
   const now = new Date();
   const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
   document.getElementById('r-time').textContent = timeStr;
@@ -791,34 +1471,31 @@ async function showResultPage() {
   const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
 
   if (isCheckingOut) {
-    // ── กำลังเลิกงาน → เปรียบกับ closeTime ──
     if (detBranch.closeTime) {
-      document.getElementById('r-opentime').textContent = `เวลาเลิกงาน: ${detBranch.closeTime}`;
+      document.getElementById('r-opentime').textContent = `เลิกงาน ${detBranch.closeTime}`;
       const [eH, eM] = detBranch.closeTime.split(':').map(Number);
-      const diff = (eH * 60 + eM) - (cH * 60 + cM);
+      const diff = (eH*60+eM) - (cH*60+cM);
       document.getElementById('r-late-badge').innerHTML = diff > 0
-        ? `<span class="badge b-orange">⚡ ออกก่อนเวลา ${diff} นาที</span>`
-        : `<span class="badge b-green">✓ ตรงเวลา</span>`;
+        ? `<span class="chip warn">ออกก่อน ${diff} นาที</span>`
+        : `<span class="chip ok">ตรงเวลา</span>`;
     } else {
       document.getElementById('r-opentime').textContent = '';
-      document.getElementById('r-late-badge').innerHTML = `<span class="badge b-gray">ไม่ระบุเวลาเลิกงาน</span>`;
+      document.getElementById('r-late-badge').innerHTML = `<span class="chip neutral">ไม่ระบุเวลาเลิกงาน</span>`;
     }
   } else {
-    // ── กำลังเข้างาน → เปรียบกับ openTime ──
     if (detBranch.openTime) {
-      document.getElementById('r-opentime').textContent = `เวลาเข้างาน: ${detBranch.openTime}`;
+      document.getElementById('r-opentime').textContent = `เข้างาน ${detBranch.openTime}`;
       const [oH, oM] = detBranch.openTime.split(':').map(Number);
-      const diff = (cH * 60 + cM) - (oH * 60 + oM);
+      const diff = (cH*60+cM) - (oH*60+oM);
       document.getElementById('r-late-badge').innerHTML = diff > 0
-        ? `<span class="badge b-orange">⏰ สาย ${diff} นาที</span>`
-        : `<span class="badge b-green">✓ ตรงเวลา</span>`;
+        ? `<span class="chip warn">สาย ${diff} นาที</span>`
+        : `<span class="chip ok">ตรงเวลา</span>`;
     } else {
       document.getElementById('r-opentime').textContent = '';
-      document.getElementById('r-late-badge').innerHTML = `<span class="badge b-gray">ไม่ระบุเวลา</span>`;
+      document.getElementById('r-late-badge').innerHTML = `<span class="chip neutral">ไม่ระบุเวลา</span>`;
     }
   }
 
-  // Previous check-in (กรอง "Sat D" หรือค่าผิดรูปแบบออก)
   if (todayStatus?.hasIn && todayStatus.lastInTime && /^\d{1,2}:\d{2}/.test(todayStatus.lastInTime)) {
     const prevRow = document.getElementById('r-prev-row');
     const brName  = branches.find(b => b.id === todayStatus.lastInBranch)?.name || todayStatus.lastInBranch;
@@ -830,35 +1507,30 @@ async function showResultPage() {
     prevRow.classList.remove('hidden');
   }
 
-  // Action buttons — ใช้ hasIn/hasOut โดยตรง ไม่พึ่ง canOut
   document.getElementById('r-actions').classList.remove('hidden');
   const btnIn  = document.getElementById('btn-in');
   const btnOut = document.getElementById('btn-out');
 
   if (!todayStatus?.hasIn) {
-    // ยังไม่เช็คอิน → แสดงเฉพาะ เข้างาน
     btnIn.classList.remove('hidden'); btnIn.disabled = false;
     btnOut.classList.add('hidden');
   } else if (todayStatus?.hasIn && !todayStatus?.hasOut) {
-    // เช็คอินแล้ว ยังไม่เลิก → แสดงเฉพาะ เลิกงาน
     btnIn.classList.add('hidden');
     btnOut.classList.remove('hidden'); btnOut.disabled = false;
   } else {
-    // เช็คทั้งคู่แล้ว → ซ่อนทั้งสอง แสดง message
     btnIn.classList.add('hidden');
     btnOut.classList.add('hidden');
     document.getElementById('r-actions').insertAdjacentHTML('beforeend',
-      '<p class="text-center text-sm font-bold text-green-600 pb-4">✅ บันทึกครบแล้ววันนี้</p>'
+      '<p class="text-center text-sm font-semibold pb-3" style="color:var(--success);">บันทึกครบแล้ววันนี้ ✓</p>'
     );
   }
 }
 
 async function retryGPS() {
   const statusEl = document.getElementById('r-retry-status');
-  statusEl.textContent = '📡 กำลังระบุตำแหน่ง...';
+  statusEl.textContent = 'กำลังระบุตำแหน่ง...';
   document.querySelector('#r-nogps button').disabled = true;
 
-  // ขอ GPS ใหม่แบบ high accuracy
   const gpsResult = await new Promise(resolve => {
     navigator.geolocation.getCurrentPosition(
       p => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }),
@@ -869,25 +1541,21 @@ async function retryGPS() {
 
   document.querySelector('#r-nogps button').disabled = false;
 
-  if (!gpsResult) {
-    statusEl.textContent = '❌ ระบุตำแหน่งไม่ได้ ลองใหม่อีกครั้ง';
-    return;
-  }
+  if (!gpsResult) { statusEl.textContent = 'ระบุตำแหน่งไม่ได้ ลองใหม่อีกครั้ง'; return; }
 
   detGps = gpsResult;
   detBranch = branches.find(b => getDist(detGps.lat, detGps.lng, b.lat, b.lng) <= b.radius) || null;
 
   if (!detBranch) {
-    statusEl.textContent = `📍 ความแม่นยำ ±${Math.round(gpsResult.acc)}m — ยังอยู่นอกพื้นที่`;
+    statusEl.textContent = `ความแม่นยำ ±${Math.round(gpsResult.acc)}m — ยังอยู่นอกพื้นที่`;
     return;
   }
 
-  // พบสาขา → แสดงข้อมูลต่อ
   statusEl.textContent = '';
   document.getElementById('r-nogps').classList.add('hidden');
   document.getElementById('r-info').classList.remove('hidden');
-  document.getElementById('r-branch').textContent = detBranch.name + ' (' + detBranch.province + ')';
-  document.getElementById('r-branch-badge').innerHTML = `<span class="badge b-green">✓ ในพื้นที่</span>`;
+  document.getElementById('r-branch').textContent = detBranch.name + ' · ' + detBranch.province;
+  document.getElementById('r-branch-badge').innerHTML = `<span class="chip ok">ในพื้นที่</span>`;
 
   const now = new Date();
   const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
@@ -896,19 +1564,19 @@ async function retryGPS() {
   const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
   const [cH, cM] = timeStr.split(':').map(Number);
   if (isCheckingOut && detBranch.closeTime) {
-    document.getElementById('r-opentime').textContent = `เวลาเลิกงาน: ${detBranch.closeTime}`;
+    document.getElementById('r-opentime').textContent = `เลิกงาน ${detBranch.closeTime}`;
     const [eH, eM] = detBranch.closeTime.split(':').map(Number);
     const diff = (eH*60+eM) - (cH*60+cM);
     document.getElementById('r-late-badge').innerHTML = diff > 0
-      ? `<span class="badge b-orange">⚡ ออกก่อนเวลา ${diff} นาที</span>`
-      : `<span class="badge b-green">✓ ตรงเวลา</span>`;
+      ? `<span class="chip warn">ออกก่อน ${diff} นาที</span>`
+      : `<span class="chip ok">ตรงเวลา</span>`;
   } else if (detBranch.openTime) {
-    document.getElementById('r-opentime').textContent = `เวลาเข้างาน: ${detBranch.openTime}`;
+    document.getElementById('r-opentime').textContent = `เข้างาน ${detBranch.openTime}`;
     const [oH, oM] = detBranch.openTime.split(':').map(Number);
     const diff = (cH*60+cM) - (oH*60+oM);
     document.getElementById('r-late-badge').innerHTML = diff > 0
-      ? `<span class="badge b-orange">⏰ สาย ${diff} นาที</span>`
-      : `<span class="badge b-green">✓ ตรงเวลา</span>`;
+      ? `<span class="chip warn">สาย ${diff} นาที</span>`
+      : `<span class="chip ok">ตรงเวลา</span>`;
   }
   document.getElementById('r-actions').classList.remove('hidden');
 }
@@ -916,13 +1584,8 @@ async function retryGPS() {
 async function getGPS() {
   return new Promise(resolve => {
     navigator.geolocation.getCurrentPosition(
-      p => resolve({
-        lat:      p.coords.latitude,
-        lng:      p.coords.longitude,
-        accuracy: p.coords.accuracy  // เพิ่ม accuracy
-      }),
+      p => resolve({ lat:p.coords.latitude, lng:p.coords.longitude, accuracy:p.coords.accuracy }),
       err => {
-        // แจ้ง error ตามประเภท ไม่ค้างไม่มีกำหนด
         if (err.code === 1) toast('กรุณาอนุญาตการเข้าถึงตำแหน่ง GPS', 'error');
         else if (err.code === 2) toast('ระบุตำแหน่งไม่ได้ กรุณาเปิด GPS', 'error');
         else toast('GPS หมดเวลา กรุณาลองใหม่', 'warn');
@@ -933,13 +1596,134 @@ async function getGPS() {
   });
 }
 
+// ── updateLateBadge ────────────────────────────────────────────
+function updateLateBadge() {
+  if (!detBranch) return;
+  const now = new Date();
+  const cH = now.getHours(), cM = now.getMinutes();
+  const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
+  if (isCheckingOut) {
+    if (detBranch.closeTime) {
+      document.getElementById('r-opentime').textContent = `เลิกงาน ${detBranch.closeTime}`;
+      const [eH,eM] = detBranch.closeTime.split(':').map(Number);
+      const diff = (eH*60+eM)-(cH*60+cM);
+      document.getElementById('r-late-badge').innerHTML = diff>0
+        ? `<span class="chip warn">ออกก่อน ${diff} นาที</span>`
+        : `<span class="chip ok">ตรงเวลา</span>`;
+    } else { document.getElementById('r-opentime').textContent=''; document.getElementById('r-late-badge').innerHTML=`<span class="chip neutral">ไม่ระบุเวลาเลิกงาน</span>`; }
+  } else {
+    if (detBranch.openTime) {
+      document.getElementById('r-opentime').textContent = `เข้างาน ${detBranch.openTime}`;
+      const [oH,oM] = detBranch.openTime.split(':').map(Number);
+      const diff = (cH*60+cM)-(oH*60+oM);
+      document.getElementById('r-late-badge').innerHTML = diff>0
+        ? `<span class="chip warn">สาย ${diff} นาที</span>`
+        : `<span class="chip ok">ตรงเวลา</span>`;
+    } else { document.getElementById('r-opentime').textContent=''; document.getElementById('r-late-badge').innerHTML=`<span class="chip neutral">ไม่ระบุเวลา</span>`; }
+  }
+}
+
+// ── Confirm flow ───────────────────────────────────────────────
+function prepareAction(type) {
+  pendingAction = type;
+  updateLateBadge();
+  document.getElementById('r-btn-row').classList.add('hidden');
+  const cd = document.getElementById('r-confirm');
+  document.getElementById('r-confirm-txt').textContent =
+    type==='IN' ? `ยืนยันการเข้างาน · ${detUser}` : `ยืนยันการเลิกงาน · ${detUser}`;
+  cd.classList.remove('hidden');
+}
+function cancelAction() {
+  pendingAction = null;
+  document.getElementById('r-confirm').classList.add('hidden');
+  document.getElementById('r-btn-row').classList.remove('hidden');
+}
+async function doConfirm() {
+  if (!pendingAction) return;
+  const action = pendingAction; pendingAction = null;
+  if (action === 'IN') await doLog('IN');
+  else await doCheckOut();
+}
+
+// ── Home history ──────────────────────────────────────────────
+async function loadHomeHistory() {
+  const r = await api('getAttendanceLogs');
+  const list = document.getElementById('home-history-list');
+  const wrap = document.getElementById('home-history');
+  if (!list || !wrap) return;
+  if (!r.success || !r.logs?.length) { wrap.classList.add('hidden'); return; }
+  list.innerHTML = r.logs.map(rec => {
+    const isIn = rec.type==='IN';
+    const dotCol = isIn ? 'var(--success)' : 'var(--red)';
+    const label = isIn ? 'เข้างาน' : 'เลิกงาน';
+    const chip = isIn ? 'ok' : 'bad';
+    const branchName = branches.find(b => b.id === rec.branchId)?.name || rec.branchId;
+    const nameDisplay = rec.nickname
+      ? `<span style="color:var(--red);font-weight:600;font-size:11px;">(${rec.nickname})</span> ${rec.name}`
+      : rec.name;
+    return `<div onclick="showEmployeeHistory('${rec.name.replace(/'/g,"\\'")}')" class="row-hover" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:11px;cursor:pointer;">
+      <span style="width:6px;height:6px;border-radius:50%;background:${dotCol};flex-shrink:0;"></span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:12.5px;font-weight:500;color:var(--ink);">${nameDisplay}</div>
+        <div style="font-size:10px;color:var(--muted);margin-top:1px;">${branchName}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;">
+        <span class="chip ${chip}">${label}</span>
+        <div class="font-mono tabular" style="font-size:10px;color:var(--muted);margin-top:2px;">${rec.time}</div>
+      </div>
+      <span style="color:var(--faint);font-family:'IBM Plex Mono',monospace;">›</span>
+    </div>`;
+  }).join('');
+  wrap.classList.remove('hidden');
+}
+
+// ── Employee history modal ────────────────────────────────────
+const thM_short = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+async function showEmployeeHistory(name) {
+  loading(true,'กำลังโหลดประวัติ...');
+  const r = await api('getEmployeeHistory',{ name });
+  loading(false);
+  if (!r.success) { toast('โหลดประวัติล้มเหลว','error'); return; }
+  document.getElementById('eh-name').textContent = r.nickname ? `(${r.nickname}) ${r.name}` : r.name;
+  const listEl = document.getElementById('eh-list');
+  if (!r.records.length) {
+    listEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--muted);font-size:13px;">ยังไม่มีประวัติ</div>';
+  } else {
+    const byDate = {};
+    r.records.forEach(rec => { (byDate[rec.date] ||= []).push(rec); });
+    listEl.innerHTML = Object.entries(byDate).map(([date,recs]) => {
+      const d = new Date(date+'T00:00:00');
+      const dateLabel = `${d.getDate()} ${thM_short[d.getMonth()]} ${d.getFullYear()+543}`;
+      const rows = recs.map(rec => {
+        const isIn = rec.type==='IN';
+        const dotCol = isIn ? 'var(--success)' : 'var(--red)';
+        const label = isIn ? 'เข้างาน' : 'เลิกงาน';
+        let badge = '';
+        if (rec.status==='สาย' && rec.lateMins>0) badge = `<span class="chip warn" style="margin-left:6px;">สาย ${rec.lateMins} น.</span>`;
+        else if (rec.status==='ออกก่อนเวลา' && rec.lateMins>0) badge = `<span class="chip warn" style="margin-left:6px;">ก่อนเวลา ${rec.lateMins} น.</span>`;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2);">
+          <div style="display:flex;align-items:center;gap:9px;min-width:0;">
+            <span style="width:6px;height:6px;border-radius:50%;background:${dotCol};flex-shrink:0;"></span>
+            <div style="min-width:0;">
+              <span style="font-size:12.5px;font-weight:600;color:var(--ink);">${label}</span>
+              <span style="font-size:10.5px;color:var(--muted);margin-left:6px;">${rec.branchName}</span>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;display:flex;align-items:center;gap:4px;">
+            <span class="font-mono tabular" style="font-size:12.5px;font-weight:600;">${rec.time}</span>${badge}
+          </div>
+        </div>`;
+      }).join('');
+      return `<div class="card" style="padding:12px 14px;"><div class="eyebrow" style="color:var(--red);margin-bottom:4px;">${dateLabel}</div>${rows}</div>`;
+    }).join('');
+  }
+  document.getElementById('modal-emp-history').classList.remove('hidden');
+}
+function closeEmpHistory() { document.getElementById('modal-emp-history').classList.add('hidden'); }
+
 async function doCheckIn()  { await doLog('IN'); }
 async function doCheckOut() {
-  // ป้องกันเลิกงานซ้ำ
-  if (todayStatus?.hasOut) {
-    toast('วันนี้คุณบันทึกเลิกงานไปแล้ว', 'warn');
-    return;
-  }
+  if (todayStatus?.hasOut) { toast('วันนี้คุณบันทึกเลิกงานไปแล้ว', 'warn'); return; }
   await doLog('OUT');
 }
 
@@ -953,32 +1737,29 @@ async function doLog(type) {
     branchId: detBranch.id,
     lat:      detGps?.lat      || '',
     lng:      detGps?.lng      || '',
-    accuracy: detGps?.accuracy ?? -1  // บันทึก accuracy
+    accuracy: detGps?.accuracy ?? -1
   });
 
   loading(false);
   if (!r.success) { toast('บันทึกล้มเหลว', 'error'); return; }
 
-  // Success screen
   document.getElementById('s-name').textContent   = detUser;
-  document.getElementById('s-type').textContent   = type === 'IN' ? '📥 เข้างาน' : '📤 เลิกงาน';
+  document.getElementById('s-type').textContent   = type === 'IN' ? 'เข้างาน · CHECK IN' : 'เลิกงาน · CHECK OUT';
   document.getElementById('s-time').textContent   = r.time;
   document.getElementById('s-branch').textContent = r.branchName || detBranch.name;
 
   const stEl = document.getElementById('s-status');
   if (r.status === 'สาย') {
-    stEl.innerHTML = `<span class="badge b-orange">⏰ สาย ${r.lateMins} นาที</span>`;
+    stEl.innerHTML = `<span class="chip warn">สาย ${r.lateMins} นาที</span>`;
   } else if (r.status === 'ออกก่อนเวลา' || r.isEarlyOut) {
-    stEl.innerHTML = `<span class="badge b-orange">⚡ ออกก่อนเวลา ${r.earlyMins||r.lateMins} นาที</span>`;
+    stEl.innerHTML = `<span class="chip warn">ออกก่อน ${r.earlyMins||r.lateMins} นาที</span>`;
   } else {
-    stEl.innerHTML = `<span class="badge b-green">✓ ตรงเวลา</span>`;
+    stEl.innerHTML = `<span class="chip ok">ตรงเวลา</span>`;
   }
-
   document.getElementById('s-cross-row').classList.toggle('hidden', !r.isCross);
 
-  // Toast แจ้งเตือนถ้าออกก่อนเวลา
   if (type === 'OUT' && (r.status === 'ออกก่อนเวลา' || r.isEarlyOut) && (r.earlyMins||r.lateMins) > 0) {
-    toast(`⚠️ ออกก่อนเวลา ${r.earlyMins||r.lateMins} นาที`, 'warn');
+    toast(`ออกก่อนเวลา ${r.earlyMins||r.lateMins} นาที`, 'warn');
   }
   changeView('success');
 }
@@ -997,108 +1778,133 @@ async function loadOfficeDash() {
   const now = new Date();
   const dd = now.getDate().toString().padStart(2,'0');
   const thM = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const dayN= ['อา.','จ.','อ.','พ.','พฤ.','ศ.','ส.'];
   const yy  = now.getFullYear() + 543;
-  document.getElementById('dash-date').textContent = `${dd} ${thM[now.getMonth()]} ${yy}`;
+  const dateLabel = `${dayN[now.getDay()]} ${dd} ${thM[now.getMonth()]} ${yy}`;
+  document.getElementById('dash-date').textContent = dateLabel;
+  const dm = document.getElementById('dash-date-mobile'); if (dm) dm.textContent = dateLabel;
 
   const suspicious = suspRes?.suspicious || [];
+  const dashboard  = dashRes.dashboard || [];
 
-  renderBranches(dashRes.dashboard || []);
-  renderAbsent(dashRes.dashboard   || []);
-  renderLate(dashRes.dashboard     || []);
-  renderStaff(staffRes             || []);
+  // KPIs
+  let totalStaff=0, totalPresent=0, totalAbsent=0, totalLate=0, fullBranches=0;
+  dashboard.forEach(b => {
+    totalStaff += (b.total||0);
+    totalPresent += (b.actual||0);
+    totalAbsent += (b.missingStaff||[]).length;
+    totalLate += (b.presentDetails||[]).filter(d=>d.isLate).length;
+    if (b.colorStatus === 'green') fullBranches++;
+  });
+  setKPI('kpi-present', totalPresent);
+  setKPI('kpi-absent', totalAbsent);
+  setKPI('kpi-late', totalLate);
+  setKPI('kpi-full', fullBranches);
+  document.getElementById('kpi-total').textContent = totalStaff;
+  document.getElementById('kpi-branches').innerHTML = `จาก <span class="tabular">${dashboard.length}</span> สาขา`;
+  document.getElementById('kpi-absent-pct').textContent = totalStaff ? `${Math.round(totalAbsent/totalStaff*100)}% ของทั้งหมด` : '—';
+
+  renderBranches(dashboard);
+  renderAbsent(dashboard);
+  renderLate(dashboard);
+  renderStaff(staffRes || []);
   renderSuspicious(suspicious);
   await renderLogs();
 
-  // badge แดงที่ tab พนักงาน
   const staffBtn = document.getElementById('tab-staff-btn');
-  if (suspicious.length > 0) {
-    staffBtn.innerHTML = `👥 พนักงาน <span style="background:#ef4444;color:#fff;border-radius:999px;padding:1px 6px;font-size:10px;margin-left:4px;">${suspicious.length}</span>`;
-  } else {
-    staffBtn.textContent = '👥 พนักงาน';
+  if (suspicious.length > 0 && staffBtn) {
+    staffBtn.innerHTML = `พนักงาน <span style="background:var(--red);color:#fff;border-radius:6px;padding:1px 6px;font-size:10px;margin-left:4px;">${suspicious.length}</span>`;
+  } else if (staffBtn) {
+    staffBtn.textContent = 'พนักงาน';
+  }
+  const sideStaff = document.getElementById('side-staff');
+  if (sideStaff) {
+    if (suspicious.length > 0) sideStaff.innerHTML = `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="6" r="2.5"/><path d="M15 14c2.8 0 5 2.2 5 5"/></svg> พนักงาน <span class="ct">${suspicious.length}</span>`;
+    else sideStaff.innerHTML = `<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="6" r="2.5"/><path d="M15 14c2.8 0 5 2.2 5 5"/></svg> พนักงาน`;
   }
 }
 
-function colorClass(cs) {
-  return cs === 'green' ? 'th-green' : cs === 'yellow' ? 'th-yellow' : 'th-red';
-}
-function badgeColor(cs) {
-  return cs === 'green' ? 'b-green' : cs === 'yellow' ? 'b-yellow' : 'b-red';
-}
-function circleColor(cs) {
-  return cs === 'green' ? 'bg-green-500' : cs === 'yellow' ? 'bg-yellow-400' : 'bg-red-500';
+// Animated count-up for KPI
+function setKPI(id, target) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = parseInt(el.textContent) || 0;
+  const dur = 600;
+  const t0 = performance.now();
+  function step(t) {
+    const k = Math.min(1, (t-t0)/dur);
+    const e = 1 - Math.pow(1-k, 3);
+    el.textContent = Math.round(start + (target-start)*e);
+    if (k < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
 }
 
+function colorClass(cs){return cs==='green'?'th-green':cs==='yellow'?'th-yellow':'th-red';}
+function badgeColor(cs){return cs==='green'?'b-green':cs==='yellow'?'b-yellow':'b-red';}
 
-// ─── helpers ────────────────────────────────────────────────────
 function nowTime() {
   const n=new Date();
-  return n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0')+' น.';
-}
-function nameDisplay(obj) {
-  const n    = typeof obj==='object'?obj.name:obj;
-  const nick = typeof obj==='object'&&obj.nickname?obj.nickname:'';
-  return (nick?`<span class="font-black text-red-600 text-[11px]">(${nick})</span> `:'') + n;
+  return n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0');
 }
 
-// ─── BRANCHES ────────────────────────────────────────────────────
+// ─── BRANCHES ─────────────────────────────────────────────────
 function renderBranches(dashboard) {
   document.getElementById('office-branches').innerHTML = !dashboard.length
-    ? '<div class="col-span-2 py-12 text-center text-slate-400">ยังไม่มีสาขา</div>'
+    ? '<div class="card" style="padding:50px;text-align:center;color:var(--muted);grid-column:1/-1;">ยังไม่มีสาขา</div>'
     : dashboard.map(b => {
       const total    = b.total    || 0;
       const minStaff = b.minStaff || 0;
       const actual   = b.actual   || 0;
       const cs       = b.colorStatus || 'red';
       const pct      = total > 0 ? Math.min(actual/total*100,100) : 0;
-      const barCol   = cs==='green'?'#22c55e':cs==='yellow'?'#eab308':'#ef4444';
+      const barCol   = cs==='green'?'var(--success)':cs==='yellow'?'var(--warn)':'var(--red)';
+      const numCol   = cs==='green'?'var(--success)':cs==='yellow'?'var(--warn)':'var(--red)';
 
       const statusLabel = cs==='green'
-        ? `<span class="badge b-green">✅ ครบทุกคน</span>`
+        ? `<span class="chip ok">ครบทุกคน</span>`
         : cs==='yellow'
-        ? `<span class="badge b-yellow">⚠️ ถึงขั้นต่ำ</span>`
-        : `<span class="badge b-red">🔴 ขาด ${Math.max(0,minStaff-actual)} คน</span>`;
+        ? `<span class="chip warn">ถึงขั้นต่ำ</span>`
+        : `<span class="chip bad">ขาด ${Math.max(0,minStaff-actual)} คน</span>`;
 
-      // รายชื่อเข้างาน
       const presentHtml = b.presentDetails&&b.presentDetails.length ? `
-        <div class="mt-3 border-t border-slate-50 pt-2">
-          <div class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">✅ เข้างาน (${b.presentDetails.length})</div>
+        <div style="margin-top:14px;border-top:1px solid var(--line-2);padding-top:12px;">
+          <div class="eyebrow" style="margin-bottom:12px;">เข้างาน · ${b.presentDetails.length}</div>
           ${b.presentDetails.map(d=>{
-            const nick = d.nickname?`<span class="font-black text-red-600 text-[11px]">(${d.nickname})</span> `:'';
+            const nick = d.nickname?`<span style="color:var(--red);font-weight:600;font-size:11px;">(${d.nickname})</span> `:'';
             const statusBadge = d.isLate
-              ? `<span class="badge b-orange">⏰ สาย ${d.mins} น.</span>`
-              : `<span class="badge b-green">✓ ตรงเวลา</span>`;
-            const earlyBadge = d.isEarlyOut ? `<span class="badge b-red">⚡ ออกก่อน ${d.earlyMins} น.</span>` : '';
-            const crossBadge = d.isCross    ? `<span class="badge b-indigo">ช่วยสาขา</span>` : '';
-            return `<div class="flex items-center gap-1.5 flex-wrap text-xs py-1 border-b border-slate-50 last:border-0">
-              <span class="flex-1 font-semibold text-slate-800">${nick}${d.name}</span>
-              <span class="text-[10px] text-slate-400">${d.time}</span>
+              ? `<span class="chip warn">สาย ${d.mins} น.</span>`
+              : `<span class="chip ok">ตรงเวลา</span>`;
+            const earlyBadge = d.isEarlyOut ? `<span class="chip bad">ออกก่อน ${d.earlyMins} น.</span>` : '';
+            const crossBadge = d.isCross    ? `<span class="chip info">ช่วยสาขา</span>` : '';
+            return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;padding:10px 0;border-bottom:1px solid var(--line-2);line-height:1.9;">
+              <span style="flex:1;font-weight:500;color:var(--ink);">${nick}${d.name}</span>
+              <span class="font-mono tabular" style="font-size:11px;color:var(--muted);">${d.time}</span>
               ${statusBadge}${earlyBadge}${crossBadge}
             </div>`;
           }).join('')}
         </div>` : '';
 
-      // ไปช่วยสาขาอื่น
       const crossOut = b.crossBranchOut||[];
       const crossOutHtml = crossOut.length ? `
-        <div class="mt-2 p-2 bg-blue-50 rounded-xl border border-blue-100">
-          <div class="text-[9px] font-black text-blue-600 uppercase mb-1">🔄 ไปช่วยสาขาอื่น (${crossOut.length})</div>
+        <div style="margin-top:10px;padding:10px 12px;background:var(--info-50);border-radius:10px;border:1px solid #cddff0;">
+          <div class="eyebrow" style="color:var(--info);margin-bottom:10px;">ไปช่วยสาขาอื่น · ${crossOut.length}</div>
           ${crossOut.map(c=>{
             const n=typeof c==='object'?c.name:c;
-            const nick=typeof c==='object'&&c.nickname?`<span class="font-black text-red-600 text-[11px]">(${c.nickname})</span> `:'';
+            const nick=typeof c==='object'&&c.nickname?`<span style="color:var(--red);font-weight:600;font-size:11px;">(${c.nickname})</span> `:'';
             const dest=typeof c==='object'?(c.branchName||c.branchId):'';
-            return `<div class="flex items-center gap-1 text-xs py-0.5">
-              <span class="flex-1 text-blue-800 font-semibold">${nick}${n}</span>
-              ${dest?`<span class="badge b-blue shrink-0">→ ${dest}</span>`:''}
+            return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 0;line-height:1.9;">
+              <span style="flex:1;color:var(--info);font-weight:500;">${nick}${n}</span>
+              ${dest?`<span class="chip info">→ ${dest}</span>`:''}
             </div>`;
           }).join('')}
         </div>` : '';
 
-      // ยังไม่มา
       const missing = b.missingStaff||[];
       const missingHtml = missing.length ? `
-        <div class="mt-2 p-3 bg-red-50 rounded-xl border border-red-100">
-          <div class="text-[9px] font-black text-red-600 uppercase mb-1">❌ ยังไม่มา (${missing.length})</div>
-          <div class="text-xs text-red-800 font-semibold leading-5">
+        <div style="margin-top:10px;padding:10px 12px;background:var(--red-50);border-radius:10px;border:1px solid #fad6d6;">
+          <div class="eyebrow" style="color:var(--red);margin-bottom:10px;">ยังไม่เข้างาน · ${missing.length}</div>
+          <div style="font-size:12px;color:var(--red-700);font-weight:500;line-height:2.0;">
             ${missing.map(s=>{
               const n=typeof s==='object'?s.name:s;
               const nick=typeof s==='object'&&s.nickname?`(${s.nickname}) `:'';
@@ -1107,79 +1913,83 @@ function renderBranches(dashboard) {
           </div>
         </div>`
         : (actual>=total&&total>0
-          ? `<div class="mt-2 p-2 bg-green-50 rounded-xl text-[10px] text-green-700 font-bold text-center">✅ พนักงานเข้างานครบทุกคน (${total} คน)</div>`
+          ? `<div style="margin-top:10px;padding:8px 12px;background:var(--success-50);border-radius:10px;font-size:11px;color:var(--success);font-weight:600;text-align:center;">เข้างานครบทุกคน · ${total} คน</div>`
           : '');
 
-      // ออกก่อนเวลา
       const earlyList = (b.presentDetails||[]).filter(d=>d.isEarlyOut);
       const earlyHtml = earlyList.length ? `
-        <div class="mt-2 p-2 bg-red-50 rounded-xl border border-red-100">
-          <div class="text-[9px] font-black text-red-600 uppercase mb-1">⚠️ ออกก่อนเวลา</div>
-          ${earlyList.map(d=>`<div class="text-xs text-red-800">${d.nickname?`(${d.nickname}) `:''}${d.name} – ออกก่อน ${d.earlyMins} น.</div>`).join('')}
+        <div style="margin-top:10px;padding:10px 12px;background:var(--red-50);border-radius:10px;">
+          <div class="eyebrow" style="color:var(--red);margin-bottom:10px;">ออกก่อนเวลา</div>
+          ${earlyList.map(d=>`<div style="font-size:12px;color:var(--red-700);line-height:2.0;padding:4px 0;">${d.nickname?`(${d.nickname}) `:''}${d.name} – ออกก่อน ${d.earlyMins} น.</div>`).join('')}
         </div>` : '';
 
       return `
-      <div class="card p-5 ${colorClass(cs)}">
-        <div class="flex justify-between items-start mb-2">
-          <div>
-            <div class="font-black text-slate-800 leading-tight">${b.name}</div>
-            <div class="text-[9px] text-slate-400 uppercase tracking-widest font-bold mt-0.5">${b.province}</div>
+      <div class="card" style="padding:18px 20px;${cs==='green'?'box-shadow:inset 4px 0 0 var(--success);':cs==='yellow'?'box-shadow:inset 4px 0 0 var(--warn);':'box-shadow:inset 4px 0 0 var(--red);'}">
+        <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:12px;">
+          <div style="min-width:0;">
+            <div class="h-2">${b.name}</div>
+            <div class="eyebrow" style="margin-top:10px;">${b.province}</div>
           </div>
-          <div class="text-right ml-2 shrink-0">
-            <div class="text-2xl font-black ${cs==='green'?'text-green-600':cs==='yellow'?'text-yellow-500':'text-red-600'}">${actual}/${total}</div>
-            ${statusLabel}
+          <div style="text-align:right;flex-shrink:0;">
+            <div class="font-mono tabular" style="font-size:24px;font-weight:600;letter-spacing:-.02em;color:${numCol};">${actual}<span style="color:var(--faint);font-weight:400;">/${total}</span></div>
+            <div style="margin-top:2px;">${statusLabel}</div>
           </div>
         </div>
-        <div class="h-1.5 bg-slate-100 rounded-full mb-2">
-          <div class="h-1.5 rounded-full" style="width:${pct}%;background:${barCol};transition:width .4s;"></div>
+        <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:10px;">
+          <div style="height:100%;border-radius:3px;width:${pct}%;background:${barCol};transition:width .6s ease;"></div>
         </div>
         ${b.openTime||b.closeTime?`
-          <div class="flex gap-3 text-[10px] text-slate-400 font-bold mb-2 flex-wrap">
-            ${b.openTime?`<span>🟢 เปิด ${b.openTime}</span>`:''}
-            ${b.closeTime?`<span>🔴 ปิด ${b.closeTime}</span>`:''}
-            <span class="ml-auto">ขั้นต่ำ ${minStaff||'-'} · รวม ${total} คน</span>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.02em;">
+            ${b.openTime?`<span>เปิด <span class="font-mono tabular" style="color:var(--ink-soft);">${b.openTime}</span></span>`:''}
+            ${b.closeTime?`<span>ปิด <span class="font-mono tabular" style="color:var(--ink-soft);">${b.closeTime}</span></span>`:''}
+            <span style="margin-left:auto;">ขั้นต่ำ <span class="tabular">${minStaff||'-'}</span> · รวม <span class="tabular">${total}</span></span>
           </div>`:''}
         ${presentHtml}${crossOutHtml}${missingHtml}${earlyHtml}
       </div>`;
     }).join('');
 }
 
-// ─── ABSENT ──────────────────────────────────────────────────────
+// ─── ABSENT ───────────────────────────────────────────────────
 function renderAbsent(dashboard) {
   const content = document.getElementById('absent-content');
-  if (!dashboard.length) { content.innerHTML='<div class="text-center py-10 text-slate-400">ยังไม่มีข้อมูลสาขา</div>'; return; }
+  if (!dashboard.length) { content.innerHTML='<div class="card" style="padding:40px;text-align:center;color:var(--muted);">ยังไม่มีข้อมูลสาขา</div>'; return; }
   let totalAbsent=0, html='';
   window._absentList=[];
   dashboard.forEach(b => {
-    const absent  = b.missingStaff  ||[];
+    const absent  = b.missingStaff||[];
     const crossOut= b.crossBranchOut||[];
     if (!absent.length&&!crossOut.length) return;
     totalAbsent += absent.length;
     absent.forEach(s=>{ const n=typeof s==='object'?s.name:s; const nick=typeof s==='object'?s.nickname:''; window._absentList.push((nick?`(${nick}) `:'')+n+` [${b.name}]`); });
-    html += `<div class="card ${colorClass(b.colorStatus||'red')} mb-3">
-      <div class="p-4 flex items-center justify-between">
-        <div><div class="font-black text-slate-800">${b.name}</div><div class="text-[9px] text-slate-400 uppercase">${b.province} · รวม ${b.total||0} คน</div></div>
-        <div class="flex gap-2 flex-wrap justify-end">
-          ${absent.length?`<span class="badge b-red">${absent.length} ขาด</span>`:''}
-          ${crossOut.length?`<span class="badge b-blue">${crossOut.length} ไปช่วย</span>`:''}
+    html += `<div class="card" style="${cs2cssShadow(b.colorStatus||'red')}margin-bottom:12px;">
+      <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <div>
+          <div class="h-2">${b.name}</div>
+          <div class="eyebrow" style="margin-top:10px;">${b.province} · รวม ${b.total||0} คน</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:end;">
+          ${absent.length?`<span class="chip bad">${absent.length} ขาด</span>`:''}
+          ${crossOut.length?`<span class="chip info">${crossOut.length} ไปช่วย</span>`:''}
         </div>
       </div>
-      <div class="px-4 pb-4">
-        ${absent.map(s=>{const n=typeof s==='object'?s.name:s;const nick=typeof s==='object'&&s.nickname?`<span class="text-[10px] text-red-400">(${s.nickname})</span> `:'';return`<div class="flex items-center gap-3 py-2 border-t border-slate-50"><div class="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center">👤</div><span class="font-semibold text-sm flex-1">${nick}${n}</span><span class="badge b-red">❌ ยังไม่มา</span></div>`;}).join('')}
-        ${crossOut.map(c=>{const n=typeof c==='object'?c.name:c;const nick=typeof c==='object'&&c.nickname?`<span class="text-[10px] text-blue-400">(${c.nickname})</span> `:'';const dest=typeof c==='object'?(c.branchName||c.branchId):'';return`<div class="flex items-center gap-3 py-2 border-t border-slate-50"><div class="w-8 h-8 rounded-xl bg-blue-50 flex items-center justify-center">🔄</div><span class="font-semibold text-sm flex-1">${nick}${n}</span><span class="badge b-blue shrink-0">→ ${dest}</span></div>`;}).join('')}
+      <div style="padding:0 18px 14px;">
+        ${absent.map(s=>{const n=typeof s==='object'?s.name:s;const nick=typeof s==='object'&&s.nickname?`<span style="color:var(--red);font-size:11px;font-weight:600;">(${s.nickname})</span> `:'';return`<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line-2);line-height:1.9;"><div style="width:34px;height:34px;border-radius:8px;background:var(--red-50);display:flex;align-items:center;justify-content:center;color:var(--red);font-weight:600;font-size:13px;flex-shrink:0;">${n.charAt(0)}</div><span style="font-weight:500;font-size:13px;flex:1;">${nick}${n}</span><span class="chip bad">ยังไม่เข้างาน</span></div>`;}).join('')}
+        ${crossOut.map(c=>{const n=typeof c==='object'?c.name:c;const nick=typeof c==='object'&&c.nickname?`<span style="color:var(--info);font-size:11px;font-weight:600;">(${c.nickname})</span> `:'';const dest=typeof c==='object'?(c.branchName||c.branchId):'';return`<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line-2);line-height:1.9;"><div style="width:34px;height:34px;border-radius:8px;background:var(--info-50);display:flex;align-items:center;justify-content:center;color:var(--info);font-weight:600;font-size:13px;flex-shrink:0;">${n.charAt(0)}</div><span style="font-weight:500;font-size:13px;flex:1;">${nick}${n}</span><span class="chip info">→ ${dest}</span></div>`;}).join('')}
       </div>
     </div>`;
   });
-  if (!html) { content.innerHTML=`<div class="card p-10 text-center"><div class="text-4xl mb-3">🎉</div><div class="font-black text-green-600">พนักงานทุกสาขาเข้างานครบ!</div></div>`; return; }
-  content.innerHTML=`<div class="card p-4 flex items-center justify-between gap-3 border-l-4 border-red-500 mb-3"><div class="flex items-center gap-3"><div class="text-xl">⚠️</div><div><div class="font-black text-red-600">ยังไม่เข้างาน ${totalAbsent} คน</div><div class="text-xs text-slate-400">ณ ${nowTime()}</div></div></div><button onclick="copyAbsentList()" class="btn-gray px-3 py-2 rounded-xl text-xs font-bold">📋 คัดลอก</button></div>${html}`;
+  if (!html) { content.innerHTML=`<div class="card" style="padding:48px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">✓</div><div class="h-2" style="color:var(--success);">พนักงานทุกสาขาเข้างานครบ</div></div>`; return; }
+  content.innerHTML=`<div class="card" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:inset 4px 0 0 var(--red);margin-bottom:12px;"><div><div class="h-2" style="color:var(--red-700);">ยังไม่เข้างาน ${totalAbsent} คน</div><div class="text-xs" style="color:var(--muted);margin-top:12px;line-height:1.9;">ณ ${nowTime()}</div></div><button onclick="copyAbsentList()" class="btn btn-soft px-3 py-2 rounded-lg text-xs">คัดลอก</button></div>${html}`;
 }
+function cs2cssShadow(cs){return cs==='green'?'box-shadow:inset 4px 0 0 var(--success);':cs==='yellow'?'box-shadow:inset 4px 0 0 var(--warn);':'box-shadow:inset 4px 0 0 var(--red);';}
+
 function copyAbsentList() {
   const list=window._absentList||[]; if (!list.length){toast('ไม่มีรายชื่อ','warn');return;}
   const text=list.join('\n');
-  navigator.clipboard.writeText(text).then(()=>toast('คัดลอก '+list.length+' รายชื่อ ✅','success')).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('คัดลอก '+list.length+' รายชื่อ ✅','success');});
+  navigator.clipboard.writeText(text).then(()=>toast('คัดลอก '+list.length+' รายชื่อ','success')).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('คัดลอก '+list.length+' รายชื่อ','success');});
 }
 
-// ─── LATE ────────────────────────────────────────────────────────
+// ─── LATE ─────────────────────────────────────────────────────
 function renderLate(dashboard) {
   window._lateList=[];
   const lateStaff=[];
@@ -1194,62 +2004,56 @@ function renderLate(dashboard) {
   const listEl=document.getElementById('late-list');
   if (!listEl) return;
   listEl.innerHTML=!lateStaff.length
-    ? '<div class="text-center py-12 text-sm text-slate-400">ไม่มีพนักงานมาสายวันนี้ 🎉</div>'
+    ? '<div style="text-align:center;padding:50px;font-size:13px;color:var(--muted);">ไม่มีพนักงานมาสายวันนี้</div>'
     : lateStaff.map(d=>`
-      <div class="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-        <div class="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center">⏰</div>
-        <div class="flex-1 min-w-0">
-          <div class="font-bold text-sm">${d.nick?`<span class="font-black text-red-600 text-[11px]">(${d.nick})</span> `:''}${d.name}</div>
-          <div class="text-[10px] text-slate-400 mt-0.5">${d.branch}</div>
+      <div class="row-hover" style="padding:14px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line-2);transition:background .15s;">
+        <div style="width:36px;height:36px;border-radius:9px;background:var(--warn-50);color:var(--warn);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;">${d.name.charAt(0)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:500;font-size:13.5px;">${d.nick?`<span style="color:var(--red);font-weight:600;font-size:11.5px;">(${d.nick})</span> `:''}${d.name}</div>
+          <div class="text-[11px]" style="color:var(--muted);margin-top:2px;">${d.branch}</div>
         </div>
-        <div class="text-right shrink-0">
-          <div class="font-black text-slate-800">${d.time}</div>
-          <span class="badge b-orange">สาย ${d.mins} น.</span>
+        <div style="text-align:right;flex-shrink:0;">
+          <div class="font-mono tabular" style="font-weight:600;font-size:13px;">${d.time}</div>
+          <span class="chip warn" style="margin-top:3px;">สาย ${d.mins} น.</span>
         </div>
       </div>`).join('');
 }
 function copyLateList() {
   const list=window._lateList||[]; if (!list.length){toast('ไม่มีรายชื่อ','warn');return;}
   const text=list.join('\n');
-  navigator.clipboard.writeText(text).then(()=>toast('คัดลอก '+list.length+' รายชื่อ ✅','success')).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('คัดลอก '+list.length+' รายชื่อ ✅','success');});
+  navigator.clipboard.writeText(text).then(()=>toast('คัดลอก '+list.length+' รายชื่อ','success')).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('คัดลอก '+list.length+' รายชื่อ','success');});
 }
 
-// ─── STAFF (เพิ่มปุ่มย้ายสาย) ───────────────────────────────────
-// ─── SUSPICIOUS GPS ──────────────────────────────────────────────
+// ─── SUSPICIOUS GPS ───────────────────────────────────────────
 function renderSuspicious(suspicious) {
   const el = document.getElementById('suspicious-section');
   if (!el) return;
-
-  if (!suspicious.length) {
-    el.innerHTML = '';
-    return;
-  }
-
+  if (!suspicious.length) { el.innerHTML = ''; return; }
   el.innerHTML = `
-    <div class="card overflow-hidden border-l-4 border-red-500">
-      <div class="p-4 bg-red-50 flex items-center gap-3">
-        <span class="text-xl">⚠️</span>
+    <div class="card overflow-hidden" style="box-shadow:inset 4px 0 0 var(--red);">
+      <div style="padding:18px 18px;background:var(--red-50);display:flex;align-items:center;gap:12px;">
+        <div style="width:36px;height:36px;border-radius:9px;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--red);font-weight:700;flex-shrink:0;">!</div>
         <div>
-          <div class="font-black text-red-700">พบพฤติกรรม GPS น่าสงสัย ${suspicious.length} คน</div>
-          <div class="text-[10px] text-red-500 mt-0.5">วิเคราะห์จาก 30 วันล่าสุด</div>
+          <div class="h-2" style="color:var(--red-700);line-height:1.9;">พบพฤติกรรม GPS น่าสงสัย ${suspicious.length} คน</div>
+          <div class="text-[11px]" style="color:var(--red-700);opacity:.7;margin-top:12px;line-height:1.9;">วิเคราะห์จาก 30 วันล่าสุด</div>
         </div>
       </div>
-      <div class="divide-y divide-slate-50">
+      <div>
         ${suspicious.map(s => {
-          const nick = s.nickname ? `<span class="text-red-600 font-black text-xs">(${s.nickname})</span> ` : '';
+          const nick = s.nickname ? `<span style="color:var(--red);font-weight:600;font-size:11px;">(${s.nickname})</span> ` : '';
           const hasRed = s.issues.some(i => i.level === 'red');
           return `
-          <div class="p-4">
-            <div class="flex items-center gap-2 mb-2">
-              <span class="text-lg">${hasRed ? '🔴' : '🟡'}</span>
-              <span class="font-bold text-sm">${nick}${s.name}</span>
-              <span class="badge b-gray text-[9px]">เช็คอิน ${s.checkCount} ครั้ง</span>
+          <div style="padding:14px 18px;border-top:1px solid var(--line-2);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${hasRed?'var(--red)':'var(--warn)'};display:inline-block;flex-shrink:0;"></span>
+              <span style="font-weight:600;font-size:13.5px;line-height:1.9;">${nick}${s.name}</span>
+              <span class="chip neutral" style="font-size:10px;">เช็คอิน ${s.checkCount} ครั้ง</span>
             </div>
-            <div class="space-y-1 pl-7">
+            <div style="padding-left:16px;display:flex;flex-direction:column;gap:10px;">
               ${s.issues.map(i => `
-                <div class="flex items-start gap-2 text-xs">
-                  <span>${i.level === 'red' ? '🔴' : '🟡'}</span>
-                  <span class="${i.level === 'red' ? 'text-red-700' : 'text-yellow-700'} font-semibold">${i.text}</span>
+                <div style="display:flex;align-items:start;gap:6px;font-size:12px;line-height:1.9;">
+                  <span style="color:${i.level==='red'?'var(--red)':'var(--warn)'};font-weight:700;flex-shrink:0;">·</span>
+                  <span style="color:${i.level === 'red' ? 'var(--red-700)' : 'var(--warn)'};font-weight:500;">${i.text}</span>
                 </div>`).join('')}
             </div>
           </div>`;
@@ -1260,23 +2064,23 @@ function renderSuspicious(suspicious) {
 
 function renderStaff(staff) {
   document.getElementById('office-staff-body').innerHTML = !staff.length
-    ? '<tr><td colspan="3" class="text-center py-8 text-slate-400">ไม่มีพนักงาน</td></tr>'
+    ? '<tr><td colspan="3" style="text-align:center;padding:40px;color:var(--muted);">ไม่มีพนักงาน</td></tr>'
     : staff.map(s => `
-      <tr class="hover:bg-slate-50 transition-colors">
-        <td class="p-4">
-          <div class="font-bold text-sm">${s.name}</div>
-          <div class="text-[10px] text-slate-400">${s.nickname||''}</div>
+      <tr class="row-hover" style="border-top:1px solid var(--line-2);">
+        <td style="padding:14px 18px;">
+          <div style="font-weight:600;font-size:13.5px;">${s.name}</div>
+          <div class="text-[11px]" style="color:var(--muted);">${s.nickname||''}</div>
         </td>
-        <td class="p-4"><span class="badge b-gray">${s.branchId||'-'}</span></td>
-        <td class="p-4 text-right space-x-2">
-          <button onclick="doTransfer('${s.name}')"     class="text-indigo-600 font-black text-[9px] uppercase tracking-widest hover:underline">ย้ายสาขา</button>
-          <button onclick="doTransferZone('${s.name}')" class="text-orange-600 font-black text-[9px] uppercase tracking-widest hover:underline">ย้ายสาย</button>
-          <button onclick="doInactive('${s.name}')"     class="text-red-600 font-black text-[9px] uppercase tracking-widest hover:underline">ลาออก</button>
+        <td style="padding:14px 18px;"><span class="chip neutral">${s.branchId||'-'}</span></td>
+        <td style="padding:14px 18px;text-align:right;">
+          <button onclick="doTransfer('${s.name}')" style="font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--info);background:none;border:none;cursor:pointer;margin-right:8px;">ย้ายสาขา</button>
+          <button onclick="doTransferZone('${s.name}')" style="font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:none;border:none;cursor:pointer;margin-right:8px;">ย้ายสาย</button>
+          <button onclick="doInactive('${s.name}')" style="font-weight:600;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--red);background:none;border:none;cursor:pointer;">ลาออก</button>
         </td>
       </tr>`).join('');
 }
 
-// ─── LOGS ────────────────────────────────────────────────────────
+// ─── LOGS ─────────────────────────────────────────────────────
 async function renderLogs() {
   const dateInput = document.getElementById('log-date');
   const selDate   = dateInput&&dateInput.value ? dateInput.value : '';
@@ -1287,56 +2091,47 @@ async function renderLogs() {
 
   function statusBadge(l) {
     if (l.type === 'IN') {
-      return l.status==='สาย' ? `<span class="badge b-orange">⏰ สาย ${l.lateMins} น.</span>` : `<span class="badge b-green">✓ ตรงเวลา</span>`;
+      return l.status==='สาย' ? `<span class="chip warn">สาย ${l.lateMins} น.</span>` : `<span class="chip ok">ตรงเวลา</span>`;
     } else {
       return (l.status==='ออกก่อนเวลา'||l.status==='เลิกก่อนเวลา')
-        ? `<span class="badge b-orange">⚡ ออกก่อน ${l.lateMins} น.</span>`
-        : `<span class="badge b-green">✓ ตรงเวลา</span>`;
+        ? `<span class="chip warn">ออกก่อน ${l.lateMins} น.</span>`
+        : `<span class="chip ok">ตรงเวลา</span>`;
     }
   }
 
   document.getElementById('office-logs').innerHTML = !logs.length
-    ? `<div class="text-center py-10 text-slate-400 text-sm">ไม่มีข้อมูล ${label}</div>`
+    ? `<div style="text-align:center;padding:50px;color:var(--muted);font-size:13px;">ไม่มีข้อมูล ${label}</div>`
     : logs.map(l => {
-        const nick = l.nickname ? `<span class="font-black text-red-600 text-[11px]">(${l.nickname})</span> ` : '';
-        // IN = เขียว, OUT = แดง
-        const iconBg  = l.type==='IN' ? 'background:#dcfce7;' : 'background:#fee2e2;';
-        const iconText= l.type==='IN' ? '✅' : '🔴';
-        const typeLabel = l.type==='IN'
-          ? `<span style="color:#15803d;font-weight:800;font-size:11px;">เข้างาน</span>`
-          : `<span style="color:#b91c1c;font-weight:800;font-size:11px;">เลิกงาน</span>`;
-        return `<div class="px-5 py-3 flex items-center gap-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
-          <div class="w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0" style="${iconBg}">${iconText}</div>
-          <div class="flex-1 min-w-0">
-            <div class="font-semibold text-sm">${nick}${l.name} ${typeLabel}</div>
-            <div class="text-[10px] text-slate-400 mt-0.5">${l.branchId}${l.isCross?` · <span style="color:#6d28d9;font-weight:700;">ต่างสาขา</span>`:''}</div>
+        const nick = l.nickname ? `<span style="color:var(--red);font-weight:600;font-size:11px;">(${l.nickname})</span> ` : '';
+        const isIn = l.type==='IN';
+        const dotCol = isIn ? 'var(--success)' : 'var(--red)';
+        const typeLabel = isIn ? 'เข้างาน' : 'เลิกงาน';
+        return `<div class="row-hover" style="padding:14px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line-2);transition:background .15s;">
+          <div style="width:8px;height:8px;border-radius:50%;background:${dotCol};flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:500;font-size:13.5px;">${nick}${l.name} <span style="color:${dotCol};font-weight:600;font-size:11px;letter-spacing:.04em;">· ${typeLabel}</span></div>
+            <div class="text-[11px]" style="color:var(--muted);margin-top:2px;">${l.branchId}${l.isCross?` · <span style="color:var(--info);font-weight:600;">ต่างสาขา</span>`:''}</div>
           </div>
-          <div class="text-right shrink-0">
-            <div class="font-black text-slate-800">${l.time}</div>
-            <div class="mt-0.5">${statusBadge(l)}</div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div class="font-mono tabular" style="font-weight:600;font-size:13px;">${l.time}</div>
+            <div style="margin-top:3px;">${statusBadge(l)}</div>
           </div>
         </div>`;
       }).join('');
 }
 
-// ─── SWITCH TAB ──────────────────────────────────────────────────
-// ─── LATE BY DATE ─────────────────────────────────────────────────
+// ─── SWITCH TAB ───────────────────────────────────────────────
 async function renderLateByDate() {
   const dateInput = document.getElementById('late-date');
   const selDate   = dateInput && dateInput.value ? dateInput.value : '';
-
-  // วันนี้ → ใช้ข้อมูล dashboard เดิม
-  if (!selDate) {
-    if (dashData) renderLate(dashData.dashboard || []);
-    return;
-  }
+  if (!selDate) { if (dashData) renderLate(dashData.dashboard || []); return; }
 
   const countEl = document.getElementById('late-count');
   const listEl  = document.getElementById('late-list');
-  listEl.innerHTML = '<div class="text-center py-6 text-slate-400">⏳ กำลังโหลด...</div>';
+  listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">กำลังโหลด...</div>';
 
   const res = await api('getLateByDate', { date: selDate });
-  if (!res.success) { listEl.innerHTML = '<div class="text-center py-6 text-red-400">โหลดข้อมูลไม่ได้</div>'; return; }
+  if (!res.success) { listEl.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red);">โหลดข้อมูลไม่ได้</div>'; return; }
 
   const thM = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   const [y,m,d] = selDate.split('-');
@@ -1348,30 +2143,36 @@ async function renderLateByDate() {
   );
 
   listEl.innerHTML = !res.staff.length
-    ? `<div class="text-center py-10 text-slate-400 text-sm">ไม่มีพนักงานมาสาย ${thLabel} 🎉</div>`
+    ? `<div style="text-align:center;padding:50px;color:var(--muted);font-size:13px;">ไม่มีพนักงานมาสาย ${thLabel}</div>`
     : res.staff.map(s => `
-      <div class="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors">
-        <div class="w-9 h-9 rounded-xl bg-orange-50 flex items-center justify-center">⏰</div>
-        <div class="flex-1 min-w-0">
-          <div class="font-bold text-sm">
-            ${s.nickname?`<span class="font-black text-red-600 text-xs">(${s.nickname})</span> `:''}${s.name}
-          </div>
-          <div class="text-[10px] text-slate-400 mt-0.5">${s.branchName}</div>
+      <div class="row-hover" style="padding:14px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--line-2);">
+        <div style="width:36px;height:36px;border-radius:9px;background:var(--warn-50);color:var(--warn);display:flex;align-items:center;justify-content:center;font-weight:600;">${s.name.charAt(0)}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:500;font-size:13.5px;">${s.nickname?`<span style="color:var(--red);font-weight:600;font-size:11.5px;">(${s.nickname})</span> `:''}${s.name}</div>
+          <div class="text-[11px]" style="color:var(--muted);">${s.branchName}</div>
         </div>
-        <div class="text-right shrink-0">
-          <div class="font-black text-slate-800">${s.time}</div>
-          <span class="badge b-orange">สาย ${s.lateMins} น.</span>
+        <div style="text-align:right;flex-shrink:0;">
+          <div class="font-mono tabular" style="font-weight:600;font-size:13px;">${s.time}</div>
+          <span class="chip warn" style="margin-top:3px;">สาย ${s.lateMins} น.</span>
         </div>
       </div>`).join('');
 }
 
 function switchTab(tab) {
+  currentTab = tab;
   ['branches','absent','late','staff','logs'].forEach(t => {
     const el  = document.getElementById('tab-'+t);
     const btn = document.getElementById('tab-'+t+'-btn');
+    const sb  = document.getElementById('side-'+t);
     if (el)  el.classList.toggle('hidden', t !== tab);
     if (btn) btn.classList.toggle('active',  t === tab);
+    if (sb)  sb.classList.toggle('active',   t === tab);
   });
+  const title = document.getElementById('office-title');
+  if (title) title.textContent = TAB_TITLES[tab] || 'Dashboard';
+  // KPI strip only on branches tab
+  const strip = document.getElementById('kpi-strip');
+  if (strip) strip.style.display = tab === 'branches' ? '' : 'none';
   if (tab === 'logs')   renderLogs();
   if (tab === 'absent') renderAbsentByDate();
   if (tab === 'late')   renderLateByDate();
@@ -1380,53 +2181,46 @@ async function renderAbsentByDate() {
   const dateInput = document.getElementById('absent-date');
   const selDate   = dateInput && dateInput.value ? dateInput.value : '';
   const content   = document.getElementById('absent-content');
+  if (!selDate) { if (dashData) renderAbsent(dashData.dashboard || []); return; }
 
-  // ถ้าเป็นวันนี้ → ใช้ข้อมูล dashboard ที่มีอยู่แล้ว
-  if (!selDate) {
-    if (dashData) { renderAbsent(dashData.dashboard || []); }
-    return;
-  }
-
-  content.innerHTML = '<div class="text-center py-6 text-slate-400">⏳ กำลังโหลด...</div>';
+  content.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">กำลังโหลด...</div>';
   const res = await api('getAbsentByDate', { date: selDate });
-  if (!res.success) { content.innerHTML = '<div class="text-center py-6 text-red-400">โหลดข้อมูลไม่ได้</div>'; return; }
+  if (!res.success) { content.innerHTML = '<div style="text-align:center;padding:30px;color:var(--red);">โหลดข้อมูลไม่ได้</div>'; return; }
 
-  const label = selDate.split('-').reverse().join('/');
-  const thM   = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const thM = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   const [y,m,d] = selDate.split('-');
   const thLabel = `${parseInt(d)} ${thM[parseInt(m)]} ${parseInt(y)+543}`;
 
   if (!res.branches.length) {
-    content.innerHTML = `<div class="card p-8 text-center"><div class="text-3xl mb-2">🎉</div><div class="font-black text-green-600">พนักงานทุกคนมาทำงานครบ</div><div class="text-xs text-slate-400 mt-1">${thLabel}</div></div>`;
+    content.innerHTML = `<div class="card" style="padding:48px;text-align:center;"><div style="font-size:32px;color:var(--success);margin-bottom:8px;">✓</div><div class="h-2" style="color:var(--success);">พนักงานทุกคนมาทำงานครบ</div><div class="text-xs" style="color:var(--muted);margin-top:4px;">${thLabel}</div></div>`;
     return;
   }
 
-  // รายชื่อสำหรับ copy
   window._absentList = [];
   res.branches.forEach(b => b.absent.forEach(s => {
     window._absentList.push((s.nickname?`(${s.nickname}) `:'')+s.name+` [${b.name}]`);
   }));
 
   content.innerHTML = `
-    <div class="card p-4 flex items-center justify-between gap-3 border-l-4 border-red-500">
+    <div class="card" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:inset 4px 0 0 var(--red);margin-bottom:12px;">
       <div>
-        <div class="font-black text-red-600">ไม่มางาน ${res.totalAbsent} คน</div>
-        <div class="text-xs text-slate-400">${thLabel}</div>
+        <div class="h-2" style="color:var(--red-700);">ไม่มางาน ${res.totalAbsent} คน</div>
+        <div class="text-xs" style="color:var(--muted);margin-top:2px;">${thLabel}</div>
       </div>
-      <button onclick="copyAbsentList()" class="btn-gray px-3 py-2 rounded-xl text-xs font-bold">📋 คัดลอก</button>
+      <button onclick="copyAbsentList()" class="btn btn-soft px-3 py-2 rounded-lg text-xs">คัดลอก</button>
     </div>
     ${res.branches.map(b => `
-      <div class="card border-l-4 border-red-400">
-        <div class="p-4 flex items-center justify-between">
-          <div><div class="font-black">${b.name}</div><div class="text-[9px] text-slate-400 uppercase">${b.province}</div></div>
-          <span class="badge b-red">${b.absent.length} คน</span>
+      <div class="card" style="box-shadow:inset 4px 0 0 var(--red);margin-bottom:12px;">
+        <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;">
+          <div><div class="h-2">${b.name}</div><div class="eyebrow" style="margin-top:2px;">${b.province}</div></div>
+          <span class="chip bad">${b.absent.length} คน</span>
         </div>
-        <div class="px-4 pb-4">
+        <div style="padding:0 18px 14px;">
           ${b.absent.map(s => `
-            <div class="flex items-center gap-3 py-2 border-t border-slate-50">
-              <div class="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center">👤</div>
-              <span class="font-semibold text-sm flex-1">${s.nickname?`<span class="text-red-500 text-xs">(${s.nickname})</span> `:''}${s.name}</span>
-              <span class="badge b-red">❌ ไม่มา</span>
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line-2);">
+              <div style="width:32px;height:32px;border-radius:8px;background:var(--red-50);color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;">${s.name.charAt(0)}</div>
+              <span style="font-weight:500;font-size:13px;flex:1;">${s.nickname?`<span style="color:var(--red);font-size:11px;font-weight:600;">(${s.nickname})</span> `:''}${s.name}</span>
+              <span class="chip bad">ไม่มา</span>
             </div>`).join('')}
         </div>
       </div>`).join('')}`;
@@ -1438,18 +2232,14 @@ async function loadMgrDash() {
   const list = await api('getStaffList', { role: 'manager' });
   loading(false);
   document.getElementById('mgr-list').innerHTML = !list?.length
-    ? '<p class="text-center py-6 text-slate-400 text-sm">ยังไม่มีการลงทะเบียน</p>'
+    ? '<p style="text-align:center;padding:24px;color:var(--muted);font-size:13px;">ยังไม่มีการลงทะเบียน</p>'
     : list.map(s => `
-      <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl">
-        <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-xl shadow-sm">👤</div>
-        <div class="flex-1 min-w-0">
-          <div class="font-black text-sm truncate">${s.name}</div>
-          <div class="text-[10px] text-slate-400">${s.nickname||''} · ${s.branchId}</div>
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border:1px solid var(--line);border-radius:14px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:15px;color:var(--ink);letter-spacing:-.005em;">${s.nickname?`<span style="color:var(--red);font-weight:700;">(${s.nickname})</span> `:''}${s.name}</div>
+          <div class="eyebrow" style="margin-top:3px;">สาขา ${s.branchId||'-'}</div>
         </div>
-        <button onclick="addFaceCapture('${s.name}','${s.nickname||''}')"
-          class="btn-gray px-3 py-1.5 rounded-xl text-[10px] font-bold shrink-0">
-          📸 เพิ่มหน้า
-        </button>
+        <button onclick="addFaceCapture('${s.name}','${s.nickname||''}')" class="btn btn-soft px-3 py-2 rounded-lg text-[11px]">เพิ่มหน้า</button>
       </div>`).join('');
 }
 
@@ -1458,26 +2248,18 @@ async function addFaceCapture(name, nickname) {
   addFaceTarget = name;
   tempDescs     = []; currentPose = 0;
 
-  // เปลี่ยน header ให้รู้ว่ากำลังเพิ่มหน้าใคร
-  document.querySelector('#view-register h2') &&
-    (document.querySelector('#view-register h2').textContent = '');
-
   changeView('register');
-
-  // ปรับ UI ให้รู้ว่าเป็นโหมดเพิ่มหน้า
   document.getElementById('reg-s1').classList.add('hidden');
   document.getElementById('reg-s2').classList.remove('hidden');
   updatePoseUI(0);
 
-  // แสดงชื่อพนักงานที่กำลังเพิ่มหน้า
   const nick = nickname ? `(${nickname}) ` : '';
   document.getElementById('reg-s2').insertAdjacentHTML('afterbegin',
-    `<div id="add-face-label" class="text-center py-2 px-4 bg-blue-50 rounded-xl mb-2">
-       <span class="text-sm font-black text-blue-700">📸 เพิ่มหน้า: ${nick}${name}</span>
+    `<div id="add-face-label" class="card" style="padding:10px 14px;background:var(--info-50);border-color:#cddff0;text-align:center;margin-bottom:6px;">
+       <span style="font-weight:600;font-size:13px;color:var(--info);">เพิ่มหน้า · ${nick}${name}</span>
      </div>`
   );
 
-  // เปิดกล้อง
   loading(true, 'กำลังเตรียมกล้อง...');
   await new Promise(r => setTimeout(r, 600));
   loading(false);
@@ -1494,6 +2276,7 @@ async function addFaceCapture(name, nickname) {
     addFaceMode = false;
   }
 }
+
 async function startCapture() {
   const fname  = document.getElementById('reg-fname').value.trim();
   const lname  = document.getElementById('reg-lname').value.trim();
@@ -1506,37 +2289,20 @@ async function startCapture() {
   if (!modelsReady) { toast('AI ยังโหลดไม่เสร็จ', 'warn'); return; }
 
   tempDescs = []; currentPose = 0;
-
   document.getElementById('reg-s1').classList.add('hidden');
   document.getElementById('reg-s2').classList.remove('hidden');
   updatePoseUI(0);
 
-  toast('📍 1: เปิดหน้ากล้องแล้ว', 'info');
-  await new Promise(r => setTimeout(r, 800));
-
-  toast('📍 2: กำลังขอ camera...', 'info');
   if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
 
   try {
     currentStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
-    toast('📍 3: ได้ stream แล้ว ✅', 'success');
-
     const video = document.getElementById('video-reg');
-    toast('📍 4: video element = ' + (video ? 'พบ' : 'ไม่พบ!'), video ? 'info' : 'error');
     if (!video) return;
-
     video.srcObject = currentStream;
-    toast('📍 5: set srcObject แล้ว', 'info');
-
-    const meta = await new Promise(r => {
-      video.onloadedmetadata = () => { toast('📍 6: loadedmetadata ✅', 'success'); r('ok'); };
-      setTimeout(() => r('timeout'), 8000);
-    });
-
-    toast('📍 7: meta=' + meta + ' videoW=' + video.videoWidth, meta === 'ok' ? 'success' : 'warn');
-
+    await new Promise(r => { video.onloadedmetadata = r; setTimeout(r, 8000); });
   } catch(e) {
-    toast('❌ Error: ' + e.name + ': ' + e.message, 'error');
+    toast('Error: ' + e.name + ': ' + e.message, 'error');
     document.getElementById('reg-s1').classList.remove('hidden');
     document.getElementById('reg-s2').classList.add('hidden');
     if (currentStream) { currentStream.getTracks().forEach(t => t.stop()); currentStream = null; }
@@ -1550,26 +2316,20 @@ function updatePoseUI(idx) {
   document.getElementById('pose-emoji').textContent = p.emoji;
   document.getElementById('pose-label').textContent = p.label;
   document.getElementById('pose-hint').textContent  = p.hint;
-  document.getElementById('btn-cap').textContent = `📸 สแกน: ${p.label}`;
+  document.getElementById('btn-cap').textContent = `สแกน · ${p.label}`;
   document.getElementById('btn-cap').disabled = false;
   document.getElementById('cap-ok').classList.add('hidden');
-  // Highlight current dot
   for (let i = 0; i < 5; i++) {
     const dot = document.getElementById('dot-' + i);
-    dot.classList.remove('bg-red-600', 'bg-green-500', 'bg-slate-200', 'scale-125');
-    if (i < idx) {
-      dot.classList.add('bg-green-500');
-    } else if (i === idx) {
-      dot.classList.add('bg-red-600', 'scale-125');
-    } else {
-      dot.classList.add('bg-slate-200');
-    }
+    dot.classList.remove('done','active');
+    if (i < idx) dot.classList.add('done');
+    else if (i === idx) dot.classList.add('active');
   }
 }
 
 async function captureOne() {
   document.getElementById('btn-cap').disabled = true;
-  loading(true, `กำลังสแกน: ${POSES[currentPose].label}...`);
+  loading(true, `กำลังสแกน · ${POSES[currentPose].label}...`);
   const d = await faceapi.detectSingleFace(document.getElementById('video-reg'))
     .withFaceLandmarks().withFaceDescriptor();
   loading(false);
@@ -1580,34 +2340,34 @@ async function captureOne() {
     return;
   }
 
-  // Flash green overlay
   const capOk = document.getElementById('cap-ok');
   capOk.classList.remove('hidden');
   setTimeout(() => capOk.classList.add('hidden'), 600);
 
   tempDescs.push(Array.from(d.descriptor));
   const doneIdx = currentPose;
-  document.getElementById('dot-' + doneIdx).classList.replace('bg-red-600', 'bg-green-500');
-  document.getElementById('dot-' + doneIdx).classList.remove('scale-125');
+  const dotEl = document.getElementById('dot-' + doneIdx);
+  dotEl.classList.remove('active'); dotEl.classList.add('done');
 
-  toast(`✅ ท่าที่ ${doneIdx + 1}/5 สำเร็จ`, 'success');
+  toast(`ท่าที่ ${doneIdx + 1}/5 สำเร็จ`, 'success');
   currentPose++;
 
   if (currentPose < POSES.length) {
-    // Show next pose instruction after short delay
     setTimeout(() => updatePoseUI(currentPose), 700);
   } else {
-    // All done
-    document.getElementById('pose-card').className = 'bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-4 text-center';
-    document.getElementById('pose-step').textContent  = '🎉 ครบทุกท่า!';
-    document.getElementById('pose-emoji').textContent = '🥳';
+    document.getElementById('pose-card').style.background = 'var(--success-50)';
+    document.getElementById('pose-card').style.borderColor = '#cfe7da';
+    document.getElementById('pose-step').textContent  = 'ครบทุกท่า!';
+    document.getElementById('pose-step').style.color = 'var(--success)';
+    document.getElementById('pose-emoji').textContent = '✓';
+    document.getElementById('pose-emoji').style.color = 'var(--success)';
     document.getElementById('pose-label').textContent = 'สแกนครบ 5 ท่าแล้ว';
     document.getElementById('pose-hint').textContent  = 'กด "บันทึก" เพื่อลงทะเบียนพนักงาน';
-    document.getElementById('btn-cap').textContent    = '✅ ครบ 5 ท่า';
+    document.getElementById('btn-cap').textContent    = 'ครบ 5 ท่า';
     document.getElementById('btn-cap').disabled = true;
     const save = document.getElementById('btn-save');
     save.disabled = false;
-    save.className = 'flex-1 btn-red py-5 rounded-2xl font-black text-base';
+    save.className = 'btn btn-accent flex-1 py-4 rounded-2xl text-sm font-semibold';
   }
 }
 
@@ -1631,13 +2391,12 @@ async function finalRegister() {
   stopCam();
   loading(false);
   if (!r.success) { toast('บันทึกล้มเหลว', 'error'); return; }
-  toast(addFaceMode ? `เพิ่มหน้า "${addFaceTarget}" สำเร็จ! 🎉` : 'ลงทะเบียนสำเร็จ! 🎉', 'success');
+  toast(addFaceMode ? `เพิ่มหน้า "${addFaceTarget}" สำเร็จ` : 'ลงทะเบียนสำเร็จ', 'success');
 
   const d = await api('getInitialData');
   branches = d.branches||[]; staffDescriptors = d.staffDescriptors||[]; staffBranches = d.staffBranches||{};
   buildMatcher();
 
-  // Reset
   addFaceMode = false; addFaceTarget = ''; currentPose = 0; tempDescs = [];
   const lbl = document.getElementById('add-face-label');
   if (lbl) lbl.remove();
@@ -1647,9 +2406,15 @@ async function finalRegister() {
   document.getElementById('reg-lname').value  = '';
   document.getElementById('reg-nick').value   = '';
   document.getElementById('reg-branch').value = '';
-  document.getElementById('pose-card').className = 'bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-100 rounded-2xl p-4 text-center';
+  // reset pose card
+  const pc = document.getElementById('pose-card');
+  pc.style.background = 'var(--navy-50)';
+  pc.style.borderColor = 'var(--line)';
+  document.getElementById('pose-step').style.color = 'var(--red)';
+  document.getElementById('pose-emoji').style.color = '';
   ['dot-0','dot-1','dot-2','dot-3','dot-4'].forEach(id => {
-    document.getElementById(id).className = 'w-4 h-4 rounded-full bg-slate-200 transition-all';
+    const e = document.getElementById(id);
+    e.classList.remove('done','active');
   });
 
   await loadMgrDash();
@@ -1666,17 +2431,15 @@ async function doTransfer(name) {
   r.success ? toast('ย้ายสำเร็จ','success') : toast('ย้ายไม่สำเร็จ','error');
   if (r.success) loadOfficeDash();
 }
-
 async function doTransferZone(name) {
-  const zone = prompt(`ย้าย ${name} ไปโซน/สายงาน (ใส่ชื่อโซน หรือกด OK เพื่อ mark ว่าย้ายสาย):`);
+  const zone = prompt(`ย้าย ${name} ไปโซน/สายงาน:`);
   if (zone === null) return;
   loading(true, 'กำลังอัปเดต...');
   const r = await api('updateStaff', { name, status: 'Transferred', newBranchId: zone.trim() || 'ZONE' });
   loading(false);
-  r.success ? toast('ย้ายสายสำเร็จ ✅','success') : toast('ล้มเหลว','error');
+  r.success ? toast('ย้ายสายสำเร็จ','success') : toast('ล้มเหลว','error');
   if (r.success) loadOfficeDash();
 }
-
 async function doInactive(name) {
   if (!confirm(`ยืนยันให้ ${name} ลาออก/Inactive?`)) return;
   loading(true);
@@ -1688,13 +2451,8 @@ async function doInactive(name) {
 
 // ── Branch Modal ───────────────────────────────────────────────
 function showBranchModal() {
-  // Clear ทุก field ก่อนเปิดเสมอ
-  ['b-id','b-name','b-province','b-lat','b-lng'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  ['b-total','b-min'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
+  ['b-id','b-name','b-province','b-lat','b-lng'].forEach(id => { document.getElementById(id).value = ''; });
+  ['b-total','b-min'].forEach(id => { document.getElementById(id).value = ''; });
   document.getElementById('b-open').value   = '';
   document.getElementById('b-close').value  = '';
   document.getElementById('b-radius').value = '0.5';
@@ -1717,8 +2475,8 @@ async function saveBranchModal() {
     province:   document.getElementById('b-province').value.trim(),
     totalStaff: parseInt(document.getElementById('b-total').value)  || 0,
     minStaff:   parseInt(document.getElementById('b-min').value)    || 0,
-    openTime:   document.getElementById('b-open').value.trim(),    // ← type="time" → HH:mm ตรงๆ
-    closeTime:  document.getElementById('b-close').value.trim(),   // ← type="time" → HH:mm ตรงๆ
+    openTime:   document.getElementById('b-open').value.trim(),
+    closeTime:  document.getElementById('b-close').value.trim(),
     lat:        parseFloat(document.getElementById('b-lat').value)    || 0,
     lng:        parseFloat(document.getElementById('b-lng').value)    || 0,
     radius:     parseFloat(document.getElementById('b-radius').value) || 0.5,
@@ -1728,11 +2486,11 @@ async function saveBranchModal() {
   const r = await api('saveBranch', { branch: b });
   loading(false);
   if (!r.success) { toast('บันทึกล้มเหลว', 'error'); return; }
-  toast('บันทึกสาขาสำเร็จ ✅', 'success');
+  toast('บันทึกสาขาสำเร็จ', 'success');
   closeBranchModal();
   const d = await api('getInitialData');
   branches = d.branches || [];
-  updateBranchDropdown();  // refresh dropdown ทันที
+  updateBranchDropdown();
   loadOfficeDash();
 }
 
