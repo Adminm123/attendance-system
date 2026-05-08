@@ -146,6 +146,12 @@ nav{background:#fff;border-bottom:1px solid #e8ecf0;position:sticky;top:0;z-inde
       <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Employee Check-In / Out</div>
     </button>
     <div id="home-info" class="text-xs text-slate-400 text-center"></div>
+
+    <!-- ประวัติวันนี้ -->
+    <div id="home-history" class="w-full max-w-xs hidden">
+      <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 text-center">ประวัติวันนี้</div>
+      <div id="home-history-list" class="space-y-1.5 max-h-52 overflow-y-auto"></div>
+    </div>
   </div>
 
   <!-- ══ SCANNING ══ -->
@@ -196,12 +202,11 @@ nav{background:#fff;border-bottom:1px solid #e8ecf0;position:sticky;top:0;z-inde
           <div class="text-right"><div id="r-branch" class="info-value">-</div><div id="r-branch-badge" class="mt-1"></div></div>
         </div>
         <div class="info-row">
-          <span class="info-label">🕐 เวลาปัจจุบัน</span>
-          <div class="text-right"><div id="r-time" class="info-value text-red-600"></div><div id="r-opentime" class="text-[10px] text-slate-400 mt-0.5"></div></div>
-        </div>
-        <div class="info-row">
           <span class="info-label">⏱ สถานะเวลา</span>
-          <div id="r-late-badge" class="info-value"></div>
+          <div class="text-right">
+            <div id="r-late-badge" class="info-value"></div>
+            <div id="r-opentime" class="text-[10px] text-slate-400 mt-0.5"></div>
+          </div>
         </div>
         <div id="r-prev-row" class="info-row hidden">
           <span class="info-label">📌 เช็คอินล่าสุดวันนี้</span>
@@ -224,10 +229,17 @@ nav{background:#fff;border-bottom:1px solid #e8ecf0;position:sticky;top:0;z-inde
 
     <!-- Action buttons -->
     <div id="r-actions" class="hidden">
-      <div class="flex gap-3 pb-8">
-        <button id="btn-in"  onclick="doCheckIn()"  class="btn-green flex-1 py-5 rounded-2xl text-lg">📥 เข้างาน</button>
-        <button id="btn-out" onclick="doCheckOut()" class="btn-orange flex-1 py-5 rounded-2xl text-lg">📤 เลิกงาน</button>
+      <div id="r-btn-row" class="flex gap-3 pb-3">
+        <button id="btn-in"  onclick="prepareAction('IN')"  class="btn-green flex-1 py-5 rounded-2xl text-lg">📥 เข้างาน</button>
+        <button id="btn-out" onclick="prepareAction('OUT')" class="btn-orange flex-1 py-5 rounded-2xl text-lg">📤 เลิกงาน</button>
       </div>
+      <!-- ยืนยันอีกครั้ง -->
+      <div id="r-confirm" class="hidden card p-4 border-2 border-green-200 mb-3 space-y-2">
+        <p id="r-confirm-txt" class="text-sm font-bold text-center text-slate-700"></p>
+        <button id="btn-confirm" onclick="doConfirm()" class="btn-green w-full py-4 rounded-2xl font-black">✅ ยืนยันอีกครั้งเพื่อบันทึก</button>
+        <button onclick="cancelAction()" class="btn-gray w-full py-3 rounded-xl text-sm">ยกเลิก</button>
+      </div>
+      <div class="pb-5"></div>
     </div>
     <div class="pb-4">
       <button onclick="goHome()" class="btn-gray w-full py-3 rounded-2xl text-sm">← กลับ</button>
@@ -450,6 +462,20 @@ nav{background:#fff;border-bottom:1px solid #e8ecf0;position:sticky;top:0;z-inde
 
 </div><!-- /app -->
 
+<!-- Employee History Modal -->
+<div id="modal-emp-history" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50" onclick="if(event.target===this)closeEmpHistory()">
+  <div class="bg-white rounded-t-3xl w-full max-w-lg shadow-2xl overflow-hidden fade-up" style="max-height:85vh;">
+    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <div id="eh-name" class="text-base font-black text-slate-800"></div>
+        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">ประวัติการเข้า-ออกงาน</div>
+      </div>
+      <button onclick="closeEmpHistory()" class="btn-gray px-4 py-2 rounded-xl text-sm">ปิด ✕</button>
+    </div>
+    <div id="eh-list" class="overflow-y-auto p-4 space-y-3" style="max-height:calc(85vh - 76px)"></div>
+  </div>
+</div>
+
 <!-- Branch Modal -->
 <div id="modal-branch" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
   <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-y-auto max-h-[92vh]">
@@ -539,6 +565,7 @@ let addFaceTarget = '';
 let tempDescs       = [];
 let dashData        = null;
 let currentPose     = 0;
+let pendingAction   = null;
 
 const POSES = [
   { step:'1/5', label:'หน้าตรง',        emoji:'😐', hint:'มองตรงเข้ากล้อง ไม่ก้มหรือเงย' },
@@ -567,12 +594,17 @@ function changeView(id) {
   document.querySelectorAll('#app > div').forEach(v => v.classList.add('hidden'));
   document.getElementById('view-' + id)?.classList.remove('hidden');
   // refresh สาขาทุกครั้งที่เปิดหน้าลงทะเบียน
-  if (id === 'register') updateBranchDropdown();
+  if (id === 'register') {
+    updateBranchDropdown();
+    document.getElementById('reg-s1').classList.remove('hidden');
+    document.getElementById('reg-s2').classList.add('hidden');
+  }
 }
 function goHome() {
   stopCam();
   changeView('home');
   document.getElementById('nav-role').classList.add('hidden');
+  loadHomeHistory();
 }
 function stopCam() {
   currentStream?.getTracks().forEach(t => t.stop());
@@ -619,6 +651,7 @@ window.onload = async () => {
     cnt ? `${cnt} พนักงาน · ${branches.length} สาขา` : 'ยังไม่มีข้อมูลพนักงาน';
 
   loading(false);
+  loadHomeHistory();
 };
 
 // แยก model loading ออกมา (ไม่เรียก buildMatcher ที่นี่ — รอ data โหลดก่อน)
@@ -741,6 +774,10 @@ async function showResultPage() {
   document.getElementById('r-nogps').classList.add('hidden');
   document.getElementById('r-actions').classList.add('hidden');
   document.getElementById('r-loading-txt').textContent = 'กำลังระบุตำแหน่ง GPS...';
+  // Reset confirm state
+  pendingAction = null;
+  document.getElementById('r-confirm').classList.add('hidden');
+  document.getElementById('r-btn-row').classList.remove('hidden');
 
   // Parallel: GPS + Today Status
   const [gpsResult, statusResult] = await Promise.all([
@@ -782,41 +819,8 @@ async function showResultPage() {
     badge.classList.remove('hidden');
   }
 
-  // Time + Late
-  const now = new Date();
-  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  document.getElementById('r-time').textContent = timeStr;
-  const [cH, cM] = timeStr.split(':').map(Number);
-
-  const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
-
-  if (isCheckingOut) {
-    // ── กำลังเลิกงาน → เปรียบกับ closeTime ──
-    if (detBranch.closeTime) {
-      document.getElementById('r-opentime').textContent = `เวลาเลิกงาน: ${detBranch.closeTime}`;
-      const [eH, eM] = detBranch.closeTime.split(':').map(Number);
-      const diff = (eH * 60 + eM) - (cH * 60 + cM);
-      document.getElementById('r-late-badge').innerHTML = diff > 0
-        ? `<span class="badge b-orange">⚡ ออกก่อนเวลา ${diff} นาที</span>`
-        : `<span class="badge b-green">✓ ตรงเวลา</span>`;
-    } else {
-      document.getElementById('r-opentime').textContent = '';
-      document.getElementById('r-late-badge').innerHTML = `<span class="badge b-gray">ไม่ระบุเวลาเลิกงาน</span>`;
-    }
-  } else {
-    // ── กำลังเข้างาน → เปรียบกับ openTime ──
-    if (detBranch.openTime) {
-      document.getElementById('r-opentime').textContent = `เวลาเข้างาน: ${detBranch.openTime}`;
-      const [oH, oM] = detBranch.openTime.split(':').map(Number);
-      const diff = (cH * 60 + cM) - (oH * 60 + oM);
-      document.getElementById('r-late-badge').innerHTML = diff > 0
-        ? `<span class="badge b-orange">⏰ สาย ${diff} นาที</span>`
-        : `<span class="badge b-green">✓ ตรงเวลา</span>`;
-    } else {
-      document.getElementById('r-opentime').textContent = '';
-      document.getElementById('r-late-badge').innerHTML = `<span class="badge b-gray">ไม่ระบุเวลา</span>`;
-    }
-  }
+  // Time + Late (คำนวณจากเวลาปัจจุบัน ณ ตอนนี้)
+  updateLateBadge();
 
   // Previous check-in (กรอง "Sat D" หรือค่าผิดรูปแบบออก)
   if (todayStatus?.hasIn && todayStatus.lastInTime && /^\d{1,2}:\d{2}/.test(todayStatus.lastInTime)) {
@@ -889,27 +893,7 @@ async function retryGPS() {
   document.getElementById('r-branch').textContent = detBranch.name + ' (' + detBranch.province + ')';
   document.getElementById('r-branch-badge').innerHTML = `<span class="badge b-green">✓ ในพื้นที่</span>`;
 
-  const now = new Date();
-  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  document.getElementById('r-time').textContent = timeStr;
-
-  const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
-  const [cH, cM] = timeStr.split(':').map(Number);
-  if (isCheckingOut && detBranch.closeTime) {
-    document.getElementById('r-opentime').textContent = `เวลาเลิกงาน: ${detBranch.closeTime}`;
-    const [eH, eM] = detBranch.closeTime.split(':').map(Number);
-    const diff = (eH*60+eM) - (cH*60+cM);
-    document.getElementById('r-late-badge').innerHTML = diff > 0
-      ? `<span class="badge b-orange">⚡ ออกก่อนเวลา ${diff} นาที</span>`
-      : `<span class="badge b-green">✓ ตรงเวลา</span>`;
-  } else if (detBranch.openTime) {
-    document.getElementById('r-opentime').textContent = `เวลาเข้างาน: ${detBranch.openTime}`;
-    const [oH, oM] = detBranch.openTime.split(':').map(Number);
-    const diff = (cH*60+cM) - (oH*60+oM);
-    document.getElementById('r-late-badge').innerHTML = diff > 0
-      ? `<span class="badge b-orange">⏰ สาย ${diff} นาที</span>`
-      : `<span class="badge b-green">✓ ตรงเวลา</span>`;
-  }
+  updateLateBadge();
   document.getElementById('r-actions').classList.remove('hidden');
 }
 
@@ -981,6 +965,173 @@ async function doLog(type) {
     toast(`⚠️ ออกก่อนเวลา ${r.earlyMins||r.lateMins} นาที`, 'warn');
   }
   changeView('success');
+}
+
+// ── updateLateBadge — คำนวณสถานะเวลา ณ ปัจจุบัน ──────────────
+function updateLateBadge() {
+  if (!detBranch) return;
+  const now = new Date();
+  const cH = now.getHours(), cM = now.getMinutes();
+  const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
+
+  if (isCheckingOut) {
+    if (detBranch.closeTime) {
+      document.getElementById('r-opentime').textContent = `เวลาเลิกงาน: ${detBranch.closeTime}`;
+      const [eH, eM] = detBranch.closeTime.split(':').map(Number);
+      const diff = (eH * 60 + eM) - (cH * 60 + cM);
+      document.getElementById('r-late-badge').innerHTML = diff > 0
+        ? `<span class="badge b-orange">⚡ ออกก่อนเวลา ${diff} นาที</span>`
+        : `<span class="badge b-green">✓ ตรงเวลา</span>`;
+    } else {
+      document.getElementById('r-opentime').textContent = '';
+      document.getElementById('r-late-badge').innerHTML = `<span class="badge b-gray">ไม่ระบุเวลาเลิกงาน</span>`;
+    }
+  } else {
+    if (detBranch.openTime) {
+      document.getElementById('r-opentime').textContent = `เวลาเข้างาน: ${detBranch.openTime}`;
+      const [oH, oM] = detBranch.openTime.split(':').map(Number);
+      const diff = (cH * 60 + cM) - (oH * 60 + oM);
+      document.getElementById('r-late-badge').innerHTML = diff > 0
+        ? `<span class="badge b-orange">⏰ สาย ${diff} นาที</span>`
+        : `<span class="badge b-green">✓ ตรงเวลา</span>`;
+    } else {
+      document.getElementById('r-opentime').textContent = '';
+      document.getElementById('r-late-badge').innerHTML = `<span class="badge b-gray">ไม่ระบุเวลา</span>`;
+    }
+  }
+}
+
+// ── prepareAction — ขั้นตอนแรก ก่อนบันทึก ──────────────────────
+function prepareAction(type) {
+  pendingAction = type;
+  updateLateBadge(); // อัพเดทสถานะ ณ เวลาที่กดปุ่ม
+  document.getElementById('r-btn-row').classList.add('hidden');
+  const confirmDiv = document.getElementById('r-confirm');
+  const confirmTxt = document.getElementById('r-confirm-txt');
+  confirmTxt.textContent = type === 'IN'
+    ? `📥 ยืนยันการเข้างาน — ${detUser}?`
+    : `📤 ยืนยันการเลิกงาน — ${detUser}?`;
+  confirmDiv.classList.remove('hidden');
+}
+
+function cancelAction() {
+  pendingAction = null;
+  document.getElementById('r-confirm').classList.add('hidden');
+  document.getElementById('r-btn-row').classList.remove('hidden');
+}
+
+async function doConfirm() {
+  if (!pendingAction) return;
+  const action = pendingAction;
+  pendingAction = null;
+  if (action === 'IN') await doLog('IN');
+  else await doCheckOut();
+}
+
+// ── loadHomeHistory — ประวัติวันนี้บนหน้าแรก ──────────────────
+async function loadHomeHistory() {
+  const r = await api('getTodayAttendance');
+  const list = document.getElementById('home-history-list');
+  const wrap = document.getElementById('home-history');
+
+  if (!r.success || !r.records?.length) {
+    wrap.classList.add('hidden');
+    return;
+  }
+
+  list.innerHTML = r.records.map(rec => {
+    const isIn  = rec.type === 'IN';
+    const icon  = isIn ? '📥' : '📤';
+    const label = isIn ? 'เข้างาน' : 'เลิกงาน';
+    const color = isIn ? 'b-green' : 'b-orange';
+    const nameDisplay = rec.nickname
+      ? `<span class="font-black text-red-600">(${rec.nickname})</span> ${rec.name}`
+      : rec.name;
+    return `<div onclick="showEmployeeHistory('${rec.name.replace(/'/g,"\\'")}')" class="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-slate-100 cursor-pointer active:bg-slate-50">
+      <div class="flex items-center gap-2">
+        <span class="text-base">${icon}</span>
+        <div>
+          <div class="text-xs text-slate-800">${nameDisplay}</div>
+          <div class="text-[10px] text-slate-400">${rec.branchName}</div>
+        </div>
+      </div>
+      <div class="text-right flex items-center gap-2">
+        <div>
+          <span class="badge ${color}">${label}</span>
+          <div class="text-[10px] text-slate-400 mt-0.5">${rec.time} น.</div>
+        </div>
+        <span class="text-slate-300 text-xs">›</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  wrap.classList.remove('hidden');
+}
+
+// ── Employee History Modal ─────────────────────────────────────
+const thM = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+async function showEmployeeHistory(name) {
+  loading(true, 'กำลังโหลดประวัติ...');
+  const r = await api('getEmployeeHistory', { name });
+  loading(false);
+  if (!r.success) { toast('โหลดประวัติล้มเหลว', 'error'); return; }
+
+  const nameEl = document.getElementById('eh-name');
+  const listEl = document.getElementById('eh-list');
+  nameEl.textContent = r.nickname ? `(${r.nickname}) ${r.name}` : r.name;
+
+  if (!r.records.length) {
+    listEl.innerHTML = '<div class="text-center text-slate-400 py-10 text-sm">ยังไม่มีประวัติ</div>';
+  } else {
+    // จัดกลุ่มตามวัน
+    const byDate = {};
+    r.records.forEach(rec => {
+      if (!byDate[rec.date]) byDate[rec.date] = [];
+      byDate[rec.date].push(rec);
+    });
+
+    listEl.innerHTML = Object.entries(byDate).map(([date, recs]) => {
+      const d = new Date(date + 'T00:00:00');
+      const dateLabel = `${d.getDate()} ${thM[d.getMonth()]} ${d.getFullYear()+543}`;
+
+      const rows = recs.map(rec => {
+        const isIn  = rec.type === 'IN';
+        const icon  = isIn ? '📥' : '📤';
+        const label = isIn ? 'เข้างาน' : 'เลิกงาน';
+        const color = isIn ? 'b-green' : 'b-orange';
+        let badge = '';
+        if (rec.status === 'สาย' && rec.lateMins > 0)
+          badge = `<span class="badge b-orange ml-1">⏰ สาย ${rec.lateMins} น.</span>`;
+        else if (rec.status === 'ออกก่อนเวลา' && rec.lateMins > 0)
+          badge = `<span class="badge b-orange ml-1">⚡ ก่อนเวลา ${rec.lateMins} น.</span>`;
+        return `<div class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+          <div class="flex items-center gap-2">
+            <span class="text-sm">${icon}</span>
+            <div>
+              <span class="text-xs font-bold text-slate-700">${label}</span>
+              <span class="text-[10px] text-slate-400 ml-1">${rec.branchName}</span>
+            </div>
+          </div>
+          <div class="text-right flex items-center gap-1">
+            <span class="text-xs font-black text-slate-800">${rec.time} น.</span>
+            ${badge}
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div class="card p-3">
+        <div class="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">${dateLabel}</div>
+        ${rows}
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('modal-emp-history').classList.remove('hidden');
+}
+
+function closeEmpHistory() {
+  document.getElementById('modal-emp-history').classList.add('hidden');
 }
 
 // ── OFFICE DASHBOARD ───────────────────────────────────────────
