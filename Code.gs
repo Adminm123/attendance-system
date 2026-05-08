@@ -99,35 +99,37 @@ function getInitialData() {
 
 // ─── Check Today Status ───────────────────────────────────────────────────────
 function checkTodayStatus(name) {
-  const today = fmtDate(new Date()); // yyyy-MM-dd GMT+7
-  const rows  = SpreadsheetApp.getActiveSpreadsheet()
-    .getSheetByName('Attendance').getDataRange().getValues().slice(1)
-    .filter(r => {
-      let d;
-      if (r[2] instanceof Date) {
-        d = fmtDate(r[2]); // แปลงเป็น GMT+7 เหมือนกัน
-      } else {
-        // string อาจเป็น "2026-05-07" หรือ "5/7/2026" ขึ้นอยู่กับ Sheets format
-        const s = String(r[2]).trim();
-        // ลอง parse แล้วแปลงเป็น GMT+7
-        const parsed = new Date(s);
-        d = isNaN(parsed) ? s : fmtDate(parsed);
-      }
-      return r[0] === name && d === today;
-    });
+  const today     = fmtDate(new Date());
+  const attSheet  = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Attendance');
+  const lastRow   = attSheet.getLastRow();
+  if (lastRow <= 1) return { success:true, hasIn:false, hasOut:false, canIn:true, canOut:false, lastInTime:null, lastInBranch:null, lastOutTime:null };
 
-  const hasIn  = rows.some(r => r[3] === 'IN');
-  const hasOut = rows.some(r => r[3] === 'OUT');
-  const lastIn  = [...rows].filter(r => r[3] === 'IN').pop();
-  const lastOut = [...rows].filter(r => r[3] === 'OUT').pop();
+  const dataRange = attSheet.getDataRange();
+  const values    = dataRange.getValues().slice(1);
+  const displays  = dataRange.getDisplayValues().slice(1);
+
+  const todayRows = [];
+  for (let i = 0; i < values.length; i++) {
+    const r = values[i];
+    if (!r[0]) continue;
+    let d;
+    if (r[2] instanceof Date) { d = fmtDate(r[2]); }
+    else { const p = new Date(String(r[2]).trim()); d = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
+    if (r[0] === name && d === today) todayRows.push({ v: r, d: displays[i] });
+  }
+
+  const hasIn  = todayRows.some(r => r.v[3] === 'IN');
+  const hasOut = todayRows.some(r => r.v[3] === 'OUT');
+  const lastIn  = [...todayRows].filter(r => r.v[3] === 'IN').pop();
+  const lastOut = [...todayRows].filter(r => r.v[3] === 'OUT').pop();
 
   return {
     success: true, hasIn, hasOut,
     canIn:  !hasIn,
-    canOut: hasIn && !hasOut, // เลิกงานได้เฉพาะเมื่อเข้าแล้วและยังไม่ได้เลิก
-    lastInTime:   lastIn  ? fmtTime(lastIn[1])  : null,
-    lastInBranch: lastIn  ? String(lastIn[4])   : null,
-    lastOutTime:  lastOut ? fmtTime(lastOut[1]) : null,
+    canOut: hasIn && !hasOut,
+    lastInTime:   lastIn  ? normalizeTimeDisplay(lastIn.d[1],  lastIn.v[1])  : null,
+    lastInBranch: lastIn  ? String(lastIn.v[4]) : null,
+    lastOutTime:  lastOut ? normalizeTimeDisplay(lastOut.d[1], lastOut.v[1]) : null,
   };
 }
 
@@ -489,29 +491,56 @@ function getLateByDate(data) {
 }
 // ─── Today Attendance (Public — for home page history) ──────────────────────
 function getTodayAttendance() {
-  const ss      = SpreadsheetApp.getActiveSpreadsheet();
-  const today   = fmtDate(new Date());
-  const branches= ss.getSheetByName('Branches').getDataRange().getValues().slice(1).filter(r=>r[0]);
+  const ss        = SpreadsheetApp.getActiveSpreadsheet();
+  const today     = fmtDate(new Date());
   const branchMap = {};
-  branches.forEach(b => { branchMap[String(b[0])] = b[1]; });
+  ss.getSheetByName('Branches').getDataRange().getValues().slice(1)
+    .filter(r => r[0]).forEach(b => { branchMap[String(b[0])] = b[1]; });
+  const nickMap = {};
+  ss.getSheetByName('Staff').getDataRange().getValues().slice(1)
+    .filter(r => r[0]).forEach(s => { nickMap[s[0]] = s[1] || ''; });
 
-  const rows = ss.getSheetByName('Attendance').getDataRange().getValues().slice(1)
-    .filter(r => {
-      if (!r[0]) return false;
-      let d;
-      if (r[2] instanceof Date) { d = fmtDate(r[2]); }
-      else { const p = new Date(String(r[2]).trim()); d = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
-      return d === today;
-    })
-    .map(r => ({
+  const attSheet  = ss.getSheetByName('Attendance');
+  const dataRange = attSheet.getDataRange();
+  const values    = dataRange.getValues().slice(1);
+  const displays  = dataRange.getDisplayValues().slice(1);
+
+  const records = [];
+  for (let i = 0; i < values.length; i++) {
+    const r = values[i];
+    if (!r[0]) continue;
+    let d;
+    if (r[2] instanceof Date) { d = fmtDate(r[2]); }
+    else { const p = new Date(String(r[2]).trim()); d = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
+    if (d !== today) continue;
+    records.push({
       name:       r[0],
+      nickname:   nickMap[r[0]] || '',
       type:       r[3],
-      time:       fmtTime(r[1]),
+      time:       normalizeTimeDisplay(displays[i][1], r[1]),
       branchName: branchMap[String(r[4])] || String(r[4])
-    }))
-    .reverse();
+    });
+  }
 
-  return { success: true, records: rows };
+  records.reverse();
+  return { success: true, records };
+}
+
+// อ่านเวลาจาก display value ของ Sheets (ตรงกับที่เห็นใน sheet เสมอ)
+function normalizeTimeDisplay(displayVal, rawVal) {
+  const s = String(displayVal || '').trim();
+  if (!s || !s.includes(':')) return fmtTime(rawVal);
+  // รูปแบบ 12h: "2:30 PM" หรือ "2:30:25 PM"
+  const ampm = s.match(/(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)/i);
+  if (ampm) {
+    let h = parseInt(ampm[1]);
+    const m = ampm[2];
+    if (ampm[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+    if (ampm[3].toUpperCase() === 'AM' && h === 12) h = 0;
+    return h.toString().padStart(2,'0') + ':' + m;
+  }
+  // รูปแบบ 24h: "14:30:25" หรือ "14:30"
+  return s.length > 5 ? s.substring(0, 5) : s;
 }
 
 function fmtDate(d)   { return Utilities.formatDate(d, 'GMT+7', 'yyyy-MM-dd'); }

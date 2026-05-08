@@ -1013,19 +1013,27 @@ async function doConfirm() {
 // ── loadHomeHistory — ประวัติวันนี้บนหน้าแรก ──────────────────
 async function loadHomeHistory() {
   const r = await api('getTodayAttendance');
-  if (!r.success || !r.records?.length) return;
-
   const list = document.getElementById('home-history-list');
+  const wrap = document.getElementById('home-history');
+
+  if (!r.success || !r.records?.length) {
+    wrap.classList.add('hidden');
+    return;
+  }
+
   list.innerHTML = r.records.map(rec => {
-    const isIn   = rec.type === 'IN';
-    const icon   = isIn ? '📥' : '📤';
-    const label  = isIn ? 'เข้างาน' : 'เลิกงาน';
-    const color  = isIn ? 'b-green' : 'b-orange';
+    const isIn  = rec.type === 'IN';
+    const icon  = isIn ? '📥' : '📤';
+    const label = isIn ? 'เข้างาน' : 'เลิกงาน';
+    const color = isIn ? 'b-green' : 'b-orange';
+    const nameDisplay = rec.nickname
+      ? `<span class="font-black text-red-600">(${rec.nickname})</span> ${rec.name}`
+      : rec.name;
     return `<div class="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-slate-100">
       <div class="flex items-center gap-2">
         <span class="text-base">${icon}</span>
         <div>
-          <div class="text-xs font-black text-slate-800">${rec.name}</div>
+          <div class="text-xs text-slate-800">${nameDisplay}</div>
           <div class="text-[10px] text-slate-400">${rec.branchName}</div>
         </div>
       </div>
@@ -1036,7 +1044,7 @@ async function loadHomeHistory() {
     </div>`;
   }).join('');
 
-  document.getElementById('home-history').classList.remove('hidden');
+  wrap.classList.remove('hidden');
 }
 
 // ── OFFICE DASHBOARD ───────────────────────────────────────────
