@@ -205,7 +205,10 @@ function getAdminDashboard() {
   const branchRows = ss.getSheetByName('Branches').getDataRange().getValues().slice(1).filter(r => r[0]);
   const allStaff   = ss.getSheetByName('Staff').getDataRange().getValues().slice(1)
     .filter(r => r[0] && r[4] !== 'Inactive');
-  const allAtt     = ss.getSheetByName('Attendance').getDataRange().getValues().slice(1);
+  const attRange   = ss.getSheetByName('Attendance').getDataRange();
+  const allAtt     = attRange.getValues().slice(1);
+  const allAttDisp = attRange.getDisplayValues().slice(1);
+  allAtt.forEach((r, i) => { r._dt = allAttDisp[i][1]; });
   const today      = fmtDate(new Date());
 
   // Build global today's IN/OUT records
@@ -244,13 +247,13 @@ function getAdminDashboard() {
     const checkedInHere= Object.values(latestInByName).filter(r => String(r[4]) === bId);
 
     const presentDetails = checkedInHere.map(r => {
-      const t  = fmtTime(r[1]);  // ← แก้ Sat D
+      const t  = normalizeTimeDisplay(r._dt, r[1]);
       const lr = openTime ? calcLate(t, openTime) : { isLate: false, mins: 0 };
 
       const outRec = latestOutByName[r[0]];
       let isEarlyOut = false, earlyMins = 0;
       if (outRec && closeTime && closeTime.includes(':')) {
-        const outT = fmtTime(outRec[1]);  // ← แก้ Sat D
+        const outT = normalizeTimeDisplay(outRec._dt, outRec[1]);
         if (outT && outT.includes(':')) {
           const [oH, oM] = outT.split(':').map(Number);
           const [eH, eM] = closeTime.split(':').map(Number);
@@ -372,10 +375,14 @@ function saveBranch(b) {
 function getAttendanceLogs(data) {
   const today = data.date || fmtDate(new Date());
   const ss    = SpreadsheetApp.getActiveSpreadsheet();
-  const rows  = ss.getSheetByName('Attendance').getDataRange().getValues().slice(1);
   const nickMap = {};
   ss.getSheetByName('Staff').getDataRange().getValues().slice(1)
     .forEach(r => { if (r[0]) nickMap[r[0]] = r[1] || ''; });
+
+  const attRange   = ss.getSheetByName('Attendance').getDataRange();
+  const rows       = attRange.getValues().slice(1);
+  const rowsDisp   = attRange.getDisplayValues().slice(1);
+  rows.forEach((r, i) => { r._dt = rowsDisp[i][1]; });
 
   const logs = rows
     .filter(r => {
@@ -391,7 +398,7 @@ function getAttendanceLogs(data) {
     .map(r => ({
       name:      r[0],
       nickname:  nickMap[r[0]] || '',
-      time:      fmtTime(r[1]),
+      time:      normalizeTimeDisplay(r._dt, r[1]),
       type:      r[3],
       branchId:  String(r[4]),
       homeBranch:String(r[5] || ''),
@@ -459,17 +466,21 @@ function getLateByDate(data) {
     });
 
   // attendance วันนั้น เฉพาะ IN
-  const attRows = ss.getSheetByName('Attendance').getDataRange().getValues().slice(1)
-    .filter(r => {
-      let d;
-      if (r[2] instanceof Date) { d = fmtDate(r[2]); }
-      else { const p = new Date(String(r[2]).trim()); d = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
-      return d === date && r[3] === 'IN';
-    });
+  const lateAttRange = ss.getSheetByName('Attendance').getDataRange();
+  const allAttRows   = lateAttRange.getValues().slice(1);
+  const allAttDisp   = lateAttRange.getDisplayValues().slice(1);
+  allAttRows.forEach((r, i) => { r._dt = allAttDisp[i][1]; });
+
+  const attRows = allAttRows.filter(r => {
+    let d;
+    if (r[2] instanceof Date) { d = fmtDate(r[2]); }
+    else { const p = new Date(String(r[2]).trim()); d = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
+    return d === date && r[3] === 'IN';
+  });
 
   const lateStaff = [];
   attRows.forEach(r => {
-    const t = fmtTime(r[1]);
+    const t = normalizeTimeDisplay(r._dt, r[1]);
     const branchId = String(r[4]);
     const branch = branchMap[branchId] || { name: branchId, openTime: '' };
     if (!branch.openTime || !branch.openTime.includes(':')) return;
