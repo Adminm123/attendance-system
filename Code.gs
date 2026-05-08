@@ -34,6 +34,7 @@ function doPost(e) {
       case 'getLateByDate':       return res(getLateByDate(data));
       case 'getSuspiciousStaff':  return res(getSuspiciousStaff());
       case 'getTodayAttendance':  return res(getTodayAttendance());
+      case 'getEmployeeHistory':  return res(getEmployeeHistory(data));
       default: return res({ success: false, message: 'Action Not Found' });
     }
   } catch (err) { return res({ success: false, message: err.toString() }); }
@@ -535,6 +536,45 @@ function getTodayAttendance() {
 
   records.reverse();
   return { success: true, records };
+}
+
+// ─── Employee Full History ────────────────────────────────────────────────────
+function getEmployeeHistory(data) {
+  const name = data.name;
+  if (!name) return { success: false, message: 'No name' };
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const staffRow = ss.getSheetByName('Staff').getDataRange().getValues().slice(1)
+    .find(r => r[0] === name);
+  const nickname = staffRow ? (staffRow[1] || '') : '';
+
+  const branchMap = {};
+  ss.getSheetByName('Branches').getDataRange().getValues().slice(1)
+    .filter(r => r[0]).forEach(b => { branchMap[String(b[0])] = b[1]; });
+
+  const attRange = ss.getSheetByName('Attendance').getDataRange();
+  const values   = attRange.getValues().slice(1);
+  const displays = attRange.getDisplayValues().slice(1);
+
+  const records = [];
+  for (let i = 0; i < values.length; i++) {
+    const r = values[i];
+    if (r[0] !== name) continue;
+    let dateStr;
+    if (r[2] instanceof Date) { dateStr = fmtDate(r[2]); }
+    else { const p = new Date(String(r[2]).trim()); dateStr = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
+    records.push({
+      date:       dateStr,
+      time:       normalizeTimeDisplay(displays[i][1], r[1]),
+      type:       r[3],
+      branchName: branchMap[String(r[4])] || String(r[4]),
+      status:     r[9] || '',
+      lateMins:   Number(r[10]) || 0
+    });
+  }
+
+  records.reverse();
+  return { success: true, name, nickname, records: records.slice(0, 90) };
 }
 
 // อ่านเวลาจาก display value ของ Sheets (ตรงกับที่เห็นใน sheet เสมอ)

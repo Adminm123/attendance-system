@@ -462,6 +462,20 @@ nav{background:#fff;border-bottom:1px solid #e8ecf0;position:sticky;top:0;z-inde
 
 </div><!-- /app -->
 
+<!-- Employee History Modal -->
+<div id="modal-emp-history" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50" onclick="if(event.target===this)closeEmpHistory()">
+  <div class="bg-white rounded-t-3xl w-full max-w-lg shadow-2xl overflow-hidden fade-up" style="max-height:85vh;">
+    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+      <div>
+        <div id="eh-name" class="text-base font-black text-slate-800"></div>
+        <div class="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">ประวัติการเข้า-ออกงาน</div>
+      </div>
+      <button onclick="closeEmpHistory()" class="btn-gray px-4 py-2 rounded-xl text-sm">ปิด ✕</button>
+    </div>
+    <div id="eh-list" class="overflow-y-auto p-4 space-y-3" style="max-height:calc(85vh - 76px)"></div>
+  </div>
+</div>
+
 <!-- Branch Modal -->
 <div id="modal-branch" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
   <div class="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-y-auto max-h-[92vh]">
@@ -1033,7 +1047,7 @@ async function loadHomeHistory() {
     const nameDisplay = rec.nickname
       ? `<span class="font-black text-red-600">(${rec.nickname})</span> ${rec.name}`
       : rec.name;
-    return `<div class="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-slate-100">
+    return `<div onclick="showEmployeeHistory('${rec.name.replace(/'/g,"\\'")}')" class="flex items-center justify-between bg-white rounded-xl px-3 py-2 border border-slate-100 cursor-pointer active:bg-slate-50">
       <div class="flex items-center gap-2">
         <span class="text-base">${icon}</span>
         <div>
@@ -1041,14 +1055,83 @@ async function loadHomeHistory() {
           <div class="text-[10px] text-slate-400">${rec.branchName}</div>
         </div>
       </div>
-      <div class="text-right">
-        <span class="badge ${color}">${label}</span>
-        <div class="text-[10px] text-slate-400 mt-0.5">${rec.time} น.</div>
+      <div class="text-right flex items-center gap-2">
+        <div>
+          <span class="badge ${color}">${label}</span>
+          <div class="text-[10px] text-slate-400 mt-0.5">${rec.time} น.</div>
+        </div>
+        <span class="text-slate-300 text-xs">›</span>
       </div>
     </div>`;
   }).join('');
 
   wrap.classList.remove('hidden');
+}
+
+// ── Employee History Modal ─────────────────────────────────────
+const thM = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+
+async function showEmployeeHistory(name) {
+  loading(true, 'กำลังโหลดประวัติ...');
+  const r = await api('getEmployeeHistory', { name });
+  loading(false);
+  if (!r.success) { toast('โหลดประวัติล้มเหลว', 'error'); return; }
+
+  const nameEl = document.getElementById('eh-name');
+  const listEl = document.getElementById('eh-list');
+  nameEl.textContent = r.nickname ? `(${r.nickname}) ${r.name}` : r.name;
+
+  if (!r.records.length) {
+    listEl.innerHTML = '<div class="text-center text-slate-400 py-10 text-sm">ยังไม่มีประวัติ</div>';
+  } else {
+    // จัดกลุ่มตามวัน
+    const byDate = {};
+    r.records.forEach(rec => {
+      if (!byDate[rec.date]) byDate[rec.date] = [];
+      byDate[rec.date].push(rec);
+    });
+
+    listEl.innerHTML = Object.entries(byDate).map(([date, recs]) => {
+      const d = new Date(date + 'T00:00:00');
+      const dateLabel = `${d.getDate()} ${thM[d.getMonth()]} ${d.getFullYear()+543}`;
+
+      const rows = recs.map(rec => {
+        const isIn  = rec.type === 'IN';
+        const icon  = isIn ? '📥' : '📤';
+        const label = isIn ? 'เข้างาน' : 'เลิกงาน';
+        const color = isIn ? 'b-green' : 'b-orange';
+        let badge = '';
+        if (rec.status === 'สาย' && rec.lateMins > 0)
+          badge = `<span class="badge b-orange ml-1">⏰ สาย ${rec.lateMins} น.</span>`;
+        else if (rec.status === 'ออกก่อนเวลา' && rec.lateMins > 0)
+          badge = `<span class="badge b-orange ml-1">⚡ ก่อนเวลา ${rec.lateMins} น.</span>`;
+        return `<div class="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
+          <div class="flex items-center gap-2">
+            <span class="text-sm">${icon}</span>
+            <div>
+              <span class="text-xs font-bold text-slate-700">${label}</span>
+              <span class="text-[10px] text-slate-400 ml-1">${rec.branchName}</span>
+            </div>
+          </div>
+          <div class="text-right flex items-center gap-1">
+            <span class="text-xs font-black text-slate-800">${rec.time} น.</span>
+            ${badge}
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div class="card p-3">
+        <div class="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">${dateLabel}</div>
+        ${rows}
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('modal-emp-history').classList.remove('hidden');
+}
+
+function closeEmpHistory() {
+  document.getElementById('modal-emp-history').classList.add('hidden');
 }
 
 // ── OFFICE DASHBOARD ───────────────────────────────────────────
