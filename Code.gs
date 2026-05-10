@@ -313,8 +313,10 @@ function getAdminDashboard() {
 
 // ─── Staff ────────────────────────────────────────────────────────────────────
 function registerStaff(data) {
-  SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Staff')
-    .appendRow([data.name, data.nickname, JSON.stringify(data.descriptors), data.mainBranchId, 'Active', new Date()]);
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Staff');
+  const existing = sheet.getDataRange().getValues().slice(1).find(r => r[0] === data.name);
+  if (existing) return { success: false, message: 'มีชื่อนี้ในระบบแล้ว' };
+  sheet.appendRow([data.name, data.nickname, JSON.stringify(data.descriptors), data.mainBranchId, 'Active', new Date()]);
   return { success: true };
 }
 
