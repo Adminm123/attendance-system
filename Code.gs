@@ -147,7 +147,7 @@ function logAttendance(data) {
   const isCross      = homeBranchId && String(data.branchId) !== homeBranchId;
 
   const now     = new Date();
-  const timeStr = Utilities.formatDate(now, 'GMT+7', 'HH:mm:ss');
+  const timeStr = Utilities.formatDate(now, 'GMT+7', 'HH:mm');
   const dateStr = fmtDate(now);
 
   let status = 'ทันเวลา', lateMins = 0;
