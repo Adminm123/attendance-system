@@ -4,7 +4,7 @@
   "description": "ระบบเช็คชื่อพนักงาน Face Recognition + GPS",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f0f2f5",
+  "background_color": "#074f96",
   "theme_color": "#cc0000",
   "orientation": "portrait",
   "icons": [
