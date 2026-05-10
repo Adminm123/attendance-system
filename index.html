@@ -450,8 +450,7 @@ body.office-active .office-shell{display:flex;}
   border-bottom:1px solid rgba(255,255,255,.08);
 }
 .office-side .brand-mark{background:#fff;}
-.office-side .brand-mark span{color:var(--navy-900);}
-.office-side .brand-mark::after{background:linear-gradient(140deg,transparent 55%,rgba(204,0,0,.45) 100%);}
+.office-side .brand-mark::after{background:none;}
 .office-side .brand-name{color:#fff;}
 .office-side .brand-sub{color:rgba(255,255,255,.55);}
 
@@ -952,7 +951,7 @@ p{line-height:1.7;}
   <!-- Sidebar -->
   <aside class="office-side">
     <div class="brand-row">
-      <div class="brand-mark"><span>M</span></div>
+      <div class="brand-mark"><img src="/icon.png" alt="logo" style="width:100%;height:100%;object-fit:cover;border-radius:9px;"></div>
       <div>
         <div class="brand-name">Attendance</div>
         <div class="brand-sub">Office Console</div>
@@ -2005,9 +2004,18 @@ function renderAbsent(dashboard) {
 }
 function cs2cssShadow(cs){return cs==='green'?'box-shadow:inset 4px 0 0 var(--success);':cs==='yellow'?'box-shadow:inset 4px 0 0 var(--warn);':'box-shadow:inset 4px 0 0 var(--red);';}
 
+function fmtDateThai(dateStr) {
+  const d = dateStr ? new Date(dateStr + 'T00:00:00') : new Date();
+  const day = d.getDate();
+  const month = d.getMonth() + 1;
+  const year = (d.getFullYear() + 543) % 100;
+  return `${day}/${month}/${year}`;
+}
 function copyAbsentList() {
   const list=window._absentList||[]; if (!list.length){toast('ไม่มีรายชื่อ','warn');return;}
-  const text=list.join('\n');
+  const dateVal=document.getElementById('absent-date')?.value||'';
+  const header='ยังไม่เข้างาน '+fmtDateThai(dateVal);
+  const text=header+'\n'+list.join('\n');
   navigator.clipboard.writeText(text).then(()=>toast('คัดลอก '+list.length+' รายชื่อ','success')).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('คัดลอก '+list.length+' รายชื่อ','success');});
 }
 
@@ -2042,7 +2050,9 @@ function renderLate(dashboard) {
 }
 function copyLateList() {
   const list=window._lateList||[]; if (!list.length){toast('ไม่มีรายชื่อ','warn');return;}
-  const text=list.join('\n');
+  const dateVal=document.getElementById('late-date')?.value||'';
+  const header='มาสาย '+fmtDateThai(dateVal);
+  const text=header+'\n'+list.join('\n');
   navigator.clipboard.writeText(text).then(()=>toast('คัดลอก '+list.length+' รายชื่อ','success')).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);toast('คัดลอก '+list.length+' รายชื่อ','success');});
 }
 
