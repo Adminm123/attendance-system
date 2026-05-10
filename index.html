@@ -100,7 +100,7 @@ body{
   background:var(--navy-900);
   text-align:center;
   font-size:9.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;
-  color:rgba(255,255,255,.6);
+  color:rgba(212,175,55,.75);
 }
 .brand{display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;}
 .brand-mark{
@@ -111,7 +111,7 @@ body{
 }
 .brand-mark::after{
   content:"";position:absolute;inset:0;
-  background:linear-gradient(140deg,transparent 60%,rgba(204,0,0,.55) 100%);
+  background:linear-gradient(140deg,transparent 50%,rgba(197,150,42,.75) 100%);
 }
 .brand-mark span{color:#fff;font-weight:700;font-size:14px;letter-spacing:.04em;position:relative;z-index:1;font-family:'IBM Plex Mono',monospace;}
 .brand-name{
@@ -255,31 +255,32 @@ body{
   color:#fff;
   border-radius:28px;
   padding:36px 28px 32px;
-  border:none;cursor:pointer;
+  border:1px solid rgba(197,150,42,.22);
+  cursor:pointer;
   text-align:left;
   box-shadow:
     0 18px 40px -22px rgba(10,29,63,.55),
-    inset 0 1px 0 rgba(255,255,255,.07);
+    inset 0 1px 0 rgba(197,150,42,.15);
   overflow:hidden;
   transition:transform .25s ease, box-shadow .25s ease;
   font-family:inherit;
 }
-.scan-tile:hover{transform:translateY(-2px);box-shadow:0 24px 50px -22px rgba(10,29,63,.65), inset 0 1px 0 rgba(255,255,255,.07);}
+.scan-tile:hover{transform:translateY(-2px);box-shadow:0 24px 50px -22px rgba(10,29,63,.65), inset 0 1px 0 rgba(197,150,42,.25), 0 0 0 1px rgba(197,150,42,.12);}
 .scan-tile:active{transform:translateY(0);}
 
 .scan-tile .glow{
   position:absolute;
-  width:280px;height:280px;border-radius:50%;
-  background:radial-gradient(circle,rgba(204,0,0,.45) 0%,rgba(204,0,0,0) 70%);
+  width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle,rgba(197,150,42,.5) 0%,rgba(197,150,42,0) 70%);
   right:-80px;top:-80px;
-  filter:blur(8px);
+  filter:blur(10px);
   pointer-events:none;
 }
 .scan-tile .grain{
   position:absolute;inset:0;
   background-image:
-    radial-gradient(circle at 20% 80%,rgba(255,255,255,.04) 0,transparent 40%),
-    linear-gradient(135deg,transparent 60%,rgba(204,0,0,.10));
+    radial-gradient(circle at 20% 80%,rgba(255,255,255,.05) 0,transparent 40%),
+    linear-gradient(135deg,transparent 58%,rgba(197,150,42,.10));
   pointer-events:none;
 }
 .scan-tile .ring,
@@ -348,6 +349,22 @@ body{
 /* ── Fade up ─────────────────────────────────────────── */
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
 .fade-up{animation:fadeUp .3s ease forwards;}
+
+/* ── Gold shimmer text ───────────────────────────────── */
+@keyframes goldShimmer{
+  0%{background-position:200% center;}
+  100%{background-position:-200% center;}
+}
+.gold-text{
+  background:linear-gradient(90deg,#b8860b 0%,#D4AF37 40%,#f5e27a 55%,#D4AF37 70%,#b8860b 100%);
+  background-size:200% auto;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+  animation:goldShimmer 4s linear infinite;
+  font-weight:700;
+  letter-spacing:.01em;
+}
 
 /* ── Tabs (mobile pills) ─────────────────────────────── */
 .tab-btn{
@@ -614,7 +631,7 @@ p{line-height:1.7;}
       <div class="brand" onclick="goHome()">
         <div class="brand-mark"><span>M</span></div>
         <div>
-          <div class="brand-name">Attendance</div>
+          <div class="brand-name gold-text">Attendance</div>
           <div class="brand-sub">Face · GPS</div>
         </div>
       </div>
@@ -659,8 +676,8 @@ p{line-height:1.7;}
           <div class="lens" style="position:absolute;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;"></div>
         </div>
 
-        <div style="font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.3;">สแกนใบหน้า</div>
-        <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:10px;letter-spacing:.04em;">แตะเพื่อเริ่มเช็คอิน · เลิกงาน</div>
+        <div class="gold-text" style="font-size:26px;line-height:1.3;">สแกนใบหน้า</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:10px;letter-spacing:.06em;">แตะเพื่อเริ่มเช็คอิน · เลิกงาน</div>
       </button>
 
       <!-- Stats row (ย้ายมาอยู่ด้านล่าง) -->
