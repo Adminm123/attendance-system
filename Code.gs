@@ -591,7 +591,9 @@ function normalizeTimeDisplay(displayVal, rawVal) {
     return h.toString().padStart(2,'0') + ':' + m;
   }
   // รูปแบบ 24h: "14:30:25" หรือ "14:30"
-  return s.length > 5 ? s.substring(0, 5) : s;
+  const t24 = s.length > 5 ? s.substring(0, 5) : s;
+  const [hh24, mm24] = t24.split(':');
+  return hh24.padStart(2, '0') + ':' + mm24;
 }
 
 function fmtDate(d)   { return Utilities.formatDate(d, 'GMT+7', 'yyyy-MM-dd'); }
@@ -614,7 +616,11 @@ function fmtTime(v) {
   }
 
   const s = v.toString().trim();
-  if (s.includes(':')) return s.substring(0, 5);
+  if (s.includes(':')) {
+    const t = s.substring(0, 5);
+    const [hh, mm] = t.split(':');
+    return hh.padStart(2, '0') + ':' + mm;
+  }
 
   // Thai decimal เช่น "9.30" → "09:30"
   if (!isNaN(s) && s.includes('.')) {
