@@ -619,7 +619,7 @@ p{line-height:1.7;}
 <!-- ═══════════════ LOADING OVERLAY ═══════════════ -->
 <div id="loading-overlay" class="hidden fixed inset-0 flex flex-col items-center justify-center gap-3">
   <div class="spinner"></div>
-  <p id="loading-txt" class="text-xs font-medium" style="color:var(--ink-soft);letter-spacing:.04em;">กำลังโหลด...</p>
+  <p id="loading-txt" class="text-xs font-medium" style="color:#C5962A;letter-spacing:.06em;font-weight:600;">กำลังโหลด...</p>
 </div>
 
 <!-- ═══════════════ MOBILE SHELL ═══════════════ -->
@@ -629,7 +629,7 @@ p{line-height:1.7;}
   <header class="appbar">
     <div class="appbar-row">
       <div class="brand" onclick="goHome()">
-        <div class="brand-mark"><span>M</span></div>
+        <div class="brand-mark"><img src="/icon.png" alt="logo" style="width:100%;height:100%;object-fit:cover;border-radius:9px;"></div>
         <div>
           <div class="brand-name gold-text">Attendance</div>
           <div class="brand-sub">Face · GPS</div>
@@ -664,19 +664,19 @@ p{line-height:1.7;}
       </div>
 
       <!-- Big scan tile -->
-      <button onclick="initScan(event)" class="scan-tile" id="scan-tile" style="text-align:center;padding:36px 28px 32px;display:flex;flex-direction:column;">
+      <button onclick="initScan(event)" class="scan-tile" id="scan-tile" style="text-align:center;padding:36px 28px 32px;">
         <div class="grain"></div>
         <div class="glow" style="left:50%;right:auto;transform:translateX(-50%);top:-60px;"></div>
         <div class="ripple-host"></div>
 
         <!-- Icon + rings -->
-        <div style="position:relative;width:90px;height:90px;margin:0 auto 0;">
+        <div style="position:relative;width:90px;height:90px;margin:0 auto 62px;">
           <div style="position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);animation:tileRing 2s ease-out infinite;"></div>
           <div style="position:absolute;inset:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.28);animation:tileRing 2s ease-out 1s infinite;"></div>
           <div class="lens" style="position:absolute;inset:auto;top:50%;left:50%;transform:translate(-50%,-50%);width:34px;height:34px;"></div>
         </div>
 
-        <div class="gold-text" style="font-size:26px;line-height:1.3;margin-top:auto;">สแกนใบหน้า</div>
+        <div class="gold-text" style="font-size:26px;line-height:1.3;">สแกนใบหน้า</div>
         <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:8px;letter-spacing:.06em;">แตะเพื่อเริ่มเช็คอิน · เลิกงาน</div>
       </button>
 
@@ -743,7 +743,7 @@ p{line-height:1.7;}
         <!-- Loading -->
         <div id="r-loading" class="py-7 flex flex-col items-center gap-3">
           <div class="spinner"></div>
-          <p id="r-loading-txt" class="text-xs" style="color:var(--muted);font-weight:500;">กำลังระบุตำแหน่ง GPS...</p>
+          <p id="r-loading-txt" class="text-xs" style="color:#C5962A;font-weight:600;">กำลังระบุตำแหน่ง GPS...</p>
         </div>
 
         <!-- Loaded -->
@@ -2376,7 +2376,7 @@ async function captureOne() {
     return;
   }
 
-  if (currentPose === 0 && faceMatcher) {
+  if (currentPose === 0 && faceMatcher && !addFaceMode) {
     const dupCheck = faceMatcher.findBestMatch(d.descriptor);
     if (dupCheck.label !== 'unknown') {
       toast(`ใบหน้านี้ตรงกับ "${dupCheck.label}" ที่ลงทะเบียนแล้ว`, 'warn');
@@ -2437,12 +2437,14 @@ async function finalRegister() {
 
   stopCam();
   loading(false);
-  if (!r.success) { toast('บันทึกล้มเหลว', 'error'); return; }
+  if (!r.success) { toast(r.message || 'บันทึกล้มเหลว', 'error'); return; }
   toast(addFaceMode ? `เพิ่มหน้า "${addFaceTarget}" สำเร็จ` : 'ลงทะเบียนสำเร็จ', 'success');
 
   const d = await api('getInitialData');
-  branches = d.branches||[]; staffDescriptors = d.staffDescriptors||[]; staffBranches = d.staffBranches||{};
-  buildMatcher();
+  if (d) {
+    branches = d.branches||[]; staffDescriptors = d.staffDescriptors||[]; staffBranches = d.staffBranches||{};
+    buildMatcher();
+  }
 
   addFaceMode = false; addFaceTarget = ''; currentPose = 0; tempDescs = [];
   const lbl = document.getElementById('add-face-label');
