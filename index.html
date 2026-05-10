@@ -270,17 +270,17 @@ body{
 
 .scan-tile .glow{
   position:absolute;
-  width:300px;height:300px;border-radius:50%;
-  background:radial-gradient(circle,rgba(197,150,42,.5) 0%,rgba(197,150,42,0) 70%);
+  width:280px;height:280px;border-radius:50%;
+  background:radial-gradient(circle,rgba(204,0,0,.45) 0%,rgba(204,0,0,0) 70%);
   right:-80px;top:-80px;
-  filter:blur(10px);
+  filter:blur(8px);
   pointer-events:none;
 }
 .scan-tile .grain{
   position:absolute;inset:0;
   background-image:
-    radial-gradient(circle at 20% 80%,rgba(255,255,255,.05) 0,transparent 40%),
-    linear-gradient(135deg,transparent 58%,rgba(197,150,42,.10));
+    radial-gradient(circle at 20% 80%,rgba(255,255,255,.04) 0,transparent 40%),
+    linear-gradient(135deg,transparent 60%,rgba(204,0,0,.10));
   pointer-events:none;
 }
 .scan-tile .ring,
@@ -1676,7 +1676,7 @@ async function loadHomeHistory() {
     const chip = isIn ? 'ok' : 'bad';
     const branchName = branches.find(b => b.id === rec.branchId)?.name || rec.branchId;
     const nameDisplay = rec.nickname
-      ? `<span style="color:var(--red);font-weight:600;font-size:11px;">(${rec.nickname})</span> ${rec.name}`
+      ? `<span style="color:#C5962A;font-weight:700;font-size:11px;">(${rec.nickname})</span> ${rec.name}`
       : rec.name;
     return `<div onclick="showEmployeeHistory('${rec.name.replace(/'/g,"\\'")}')" class="row-hover" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:11px;cursor:pointer;">
       <span style="width:6px;height:6px;border-radius:50%;background:${dotCol};flex-shrink:0;"></span>
