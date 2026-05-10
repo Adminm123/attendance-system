@@ -2319,6 +2319,15 @@ function updatePoseUI(idx) {
   document.getElementById('btn-cap').textContent = `สแกน · ${p.label}`;
   document.getElementById('btn-cap').disabled = false;
   document.getElementById('cap-ok').classList.add('hidden');
+  const _save = document.getElementById('btn-save');
+  _save.disabled = true;
+  _save.className = 'btn flex-1 py-4 rounded-2xl text-sm';
+  _save.style.cssText = 'background:var(--bg-2);color:var(--faint);';
+  const _pc = document.getElementById('pose-card');
+  _pc.style.background = '';
+  _pc.style.borderColor = '';
+  document.getElementById('pose-step').style.color = '';
+  document.getElementById('pose-emoji').style.color = '';
   for (let i = 0; i < 5; i++) {
     const dot = document.getElementById('dot-' + i);
     dot.classList.remove('done','active');
@@ -2367,7 +2376,8 @@ async function captureOne() {
     document.getElementById('btn-cap').disabled = true;
     const save = document.getElementById('btn-save');
     save.disabled = false;
-    save.className = 'btn btn-accent flex-1 py-4 rounded-2xl text-sm font-semibold';
+    save.removeAttribute('style');
+    save.className = 'btn btn-success flex-1 py-4 rounded-2xl text-sm font-semibold';
   }
 }
 
