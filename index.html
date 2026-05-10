@@ -1465,31 +1465,31 @@ async function showResultPage() {
 
   const now = new Date();
   const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  document.getElementById('r-time').textContent = timeStr;
+  document.getElementById('r-time').textContent = timeStr + ' น.';
   const [cH, cM] = timeStr.split(':').map(Number);
 
   const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
 
   if (isCheckingOut) {
     if (detBranch.closeTime) {
-      document.getElementById('r-opentime').textContent = `เลิกงาน ${detBranch.closeTime}`;
+      document.getElementById('r-opentime').textContent = `เลิกงาน ${detBranch.closeTime} น.`;
       const [eH, eM] = detBranch.closeTime.split(':').map(Number);
       const diff = (eH*60+eM) - (cH*60+cM);
       document.getElementById('r-late-badge').innerHTML = diff > 0
         ? `<span class="chip warn">ออกก่อน ${diff} นาที</span>`
-        : `<span class="chip ok">ตรงเวลา</span>`;
+        : `<span class="chip ok">ในเวลา</span>`;
     } else {
       document.getElementById('r-opentime').textContent = '';
       document.getElementById('r-late-badge').innerHTML = `<span class="chip neutral">ไม่ระบุเวลาเลิกงาน</span>`;
     }
   } else {
     if (detBranch.openTime) {
-      document.getElementById('r-opentime').textContent = `เข้างาน ${detBranch.openTime}`;
+      document.getElementById('r-opentime').textContent = `เข้างาน ${detBranch.openTime} น.`;
       const [oH, oM] = detBranch.openTime.split(':').map(Number);
       const diff = (cH*60+cM) - (oH*60+oM);
       document.getElementById('r-late-badge').innerHTML = diff > 0
         ? `<span class="chip warn">สาย ${diff} นาที</span>`
-        : `<span class="chip ok">ตรงเวลา</span>`;
+        : `<span class="chip ok">ในเวลา</span>`;
     } else {
       document.getElementById('r-opentime').textContent = '';
       document.getElementById('r-late-badge').innerHTML = `<span class="chip neutral">ไม่ระบุเวลา</span>`;
@@ -1559,24 +1559,24 @@ async function retryGPS() {
 
   const now = new Date();
   const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  document.getElementById('r-time').textContent = timeStr;
+  document.getElementById('r-time').textContent = timeStr + ' น.';
 
   const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
   const [cH, cM] = timeStr.split(':').map(Number);
   if (isCheckingOut && detBranch.closeTime) {
-    document.getElementById('r-opentime').textContent = `เลิกงาน ${detBranch.closeTime}`;
+    document.getElementById('r-opentime').textContent = `เลิกงาน ${detBranch.closeTime} น.`;
     const [eH, eM] = detBranch.closeTime.split(':').map(Number);
     const diff = (eH*60+eM) - (cH*60+cM);
     document.getElementById('r-late-badge').innerHTML = diff > 0
       ? `<span class="chip warn">ออกก่อน ${diff} นาที</span>`
-      : `<span class="chip ok">ตรงเวลา</span>`;
+      : `<span class="chip ok">ในเวลา</span>`;
   } else if (detBranch.openTime) {
-    document.getElementById('r-opentime').textContent = `เข้างาน ${detBranch.openTime}`;
+    document.getElementById('r-opentime').textContent = `เข้างาน ${detBranch.openTime} น.`;
     const [oH, oM] = detBranch.openTime.split(':').map(Number);
     const diff = (cH*60+cM) - (oH*60+oM);
     document.getElementById('r-late-badge').innerHTML = diff > 0
       ? `<span class="chip warn">สาย ${diff} นาที</span>`
-      : `<span class="chip ok">ตรงเวลา</span>`;
+      : `<span class="chip ok">ในเวลา</span>`;
   }
   document.getElementById('r-actions').classList.remove('hidden');
 }
@@ -1604,21 +1604,21 @@ function updateLateBadge() {
   const isCheckingOut = !!(todayStatus?.hasIn && !todayStatus?.hasOut);
   if (isCheckingOut) {
     if (detBranch.closeTime) {
-      document.getElementById('r-opentime').textContent = `เลิกงาน ${detBranch.closeTime}`;
+      document.getElementById('r-opentime').textContent = `เลิกงาน ${detBranch.closeTime} น.`;
       const [eH,eM] = detBranch.closeTime.split(':').map(Number);
       const diff = (eH*60+eM)-(cH*60+cM);
       document.getElementById('r-late-badge').innerHTML = diff>0
         ? `<span class="chip warn">ออกก่อน ${diff} นาที</span>`
-        : `<span class="chip ok">ตรงเวลา</span>`;
+        : `<span class="chip ok">ในเวลา</span>`;
     } else { document.getElementById('r-opentime').textContent=''; document.getElementById('r-late-badge').innerHTML=`<span class="chip neutral">ไม่ระบุเวลาเลิกงาน</span>`; }
   } else {
     if (detBranch.openTime) {
-      document.getElementById('r-opentime').textContent = `เข้างาน ${detBranch.openTime}`;
+      document.getElementById('r-opentime').textContent = `เข้างาน ${detBranch.openTime} น.`;
       const [oH,oM] = detBranch.openTime.split(':').map(Number);
       const diff = (cH*60+cM)-(oH*60+oM);
       document.getElementById('r-late-badge').innerHTML = diff>0
         ? `<span class="chip warn">สาย ${diff} นาที</span>`
-        : `<span class="chip ok">ตรงเวลา</span>`;
+        : `<span class="chip ok">ในเวลา</span>`;
     } else { document.getElementById('r-opentime').textContent=''; document.getElementById('r-late-badge').innerHTML=`<span class="chip neutral">ไม่ระบุเวลา</span>`; }
   }
 }
@@ -1669,7 +1669,7 @@ async function loadHomeHistory() {
       </div>
       <div style="text-align:right;flex-shrink:0;">
         <span class="chip ${chip}">${label}</span>
-        <div class="font-mono tabular" style="font-size:10px;color:var(--muted);margin-top:2px;">${rec.time}</div>
+        <div class="font-mono tabular" style="font-size:10px;color:var(--muted);margin-top:2px;">${rec.time} น.</div>
       </div>
       <span style="color:var(--faint);font-family:'IBM Plex Mono',monospace;">›</span>
     </div>`;
@@ -1710,7 +1710,7 @@ async function showEmployeeHistory(name) {
             </div>
           </div>
           <div style="text-align:right;flex-shrink:0;display:flex;align-items:center;gap:4px;">
-            <span class="font-mono tabular" style="font-size:12.5px;font-weight:600;">${rec.time}</span>${badge}
+            <span class="font-mono tabular" style="font-size:12.5px;font-weight:600;">${rec.time} น.</span>${badge}
           </div>
         </div>`;
       }).join('');
@@ -1745,7 +1745,7 @@ async function doLog(type) {
 
   document.getElementById('s-name').textContent   = detUser;
   document.getElementById('s-type').textContent   = type === 'IN' ? 'เข้างาน · CHECK IN' : 'เลิกงาน · CHECK OUT';
-  document.getElementById('s-time').textContent   = r.time;
+  document.getElementById('s-time').textContent   = r.time + ' น.';
   document.getElementById('s-branch').textContent = r.branchName || detBranch.name;
 
   const stEl = document.getElementById('s-status');
@@ -1754,7 +1754,7 @@ async function doLog(type) {
   } else if (r.status === 'ออกก่อนเวลา' || r.isEarlyOut) {
     stEl.innerHTML = `<span class="chip warn">ออกก่อน ${r.earlyMins||r.lateMins} นาที</span>`;
   } else {
-    stEl.innerHTML = `<span class="chip ok">ตรงเวลา</span>`;
+    stEl.innerHTML = `<span class="chip ok">ในเวลา</span>`;
   }
   document.getElementById('s-cross-row').classList.toggle('hidden', !r.isCross);
 
@@ -1874,12 +1874,12 @@ function renderBranches(dashboard) {
             const nick = d.nickname?`<span style="color:var(--red);font-weight:600;font-size:11px;">(${d.nickname})</span> `:'';
             const statusBadge = d.isLate
               ? `<span class="chip warn">สาย ${d.mins} น.</span>`
-              : `<span class="chip ok">ตรงเวลา</span>`;
+              : `<span class="chip ok">ในเวลา</span>`;
             const earlyBadge = d.isEarlyOut ? `<span class="chip bad">ออกก่อน ${d.earlyMins} น.</span>` : '';
             const crossBadge = d.isCross    ? `<span class="chip info">ช่วยสาขา</span>` : '';
             return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;padding:10px 0;border-bottom:1px solid var(--line-2);line-height:1.9;">
               <span style="flex:1;font-weight:500;color:var(--ink);">${nick}${d.name}</span>
-              <span class="font-mono tabular" style="font-size:11px;color:var(--muted);">${d.time}</span>
+              <span class="font-mono tabular" style="font-size:11px;color:var(--muted);">${d.time} น.</span>
               ${statusBadge}${earlyBadge}${crossBadge}
             </div>`;
           }).join('')}
@@ -2013,7 +2013,7 @@ function renderLate(dashboard) {
           <div class="text-[11px]" style="color:var(--muted);margin-top:2px;">${d.branch}</div>
         </div>
         <div style="text-align:right;flex-shrink:0;">
-          <div class="font-mono tabular" style="font-weight:600;font-size:13px;">${d.time}</div>
+          <div class="font-mono tabular" style="font-weight:600;font-size:13px;">${d.time} น.</div>
           <span class="chip warn" style="margin-top:3px;">สาย ${d.mins} น.</span>
         </div>
       </div>`).join('');
@@ -2091,11 +2091,11 @@ async function renderLogs() {
 
   function statusBadge(l) {
     if (l.type === 'IN') {
-      return l.status==='สาย' ? `<span class="chip warn">สาย ${l.lateMins} น.</span>` : `<span class="chip ok">ตรงเวลา</span>`;
+      return l.status==='สาย' ? `<span class="chip warn">สาย ${l.lateMins} น.</span>` : `<span class="chip ok">ในเวลา</span>`;
     } else {
       return (l.status==='ออกก่อนเวลา'||l.status==='เลิกก่อนเวลา')
         ? `<span class="chip warn">ออกก่อน ${l.lateMins} น.</span>`
-        : `<span class="chip ok">ตรงเวลา</span>`;
+        : `<span class="chip ok">ในเวลา</span>`;
     }
   }
 
