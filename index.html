@@ -1937,7 +1937,7 @@ function renderBranches(dashboard) {
             const earlyBadge = d.isEarlyOut ? `<span class="chip bad">ออกก่อน ${d.earlyMins} น.</span>` : '';
             const crossBadge = d.isCross    ? `<span class="chip info">ช่วยสาขา</span>` : '';
             return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px;padding:10px 0;border-bottom:1px solid var(--line-2);line-height:1.9;">
-              <span style="flex:1;font-weight:500;color:var(--ink);"><span style="color:var(--muted);font-size:10px;font-weight:600;margin-right:4px;">[${d.homeBranch||b.id}]</span>${nick}${d.name}</span>
+              <span style="flex:1;font-weight:500;color:var(--ink);">${nick}${d.name}</span>
               <span class="font-mono tabular" style="font-size:11px;color:var(--muted);">${d.time} น.</span>
               ${statusBadge}${earlyBadge}${crossBadge}
             </div>`;
@@ -1953,8 +1953,8 @@ function renderBranches(dashboard) {
             const nick=typeof c==='object'&&c.nickname?`<span style="color:#C5962A;font-weight:700;font-size:11px;">(${c.nickname})</span> `:'';
             const dest=typeof c==='object'?(c.branchName||c.branchId):'';
             return `<div style="display:flex;align-items:center;gap:6px;font-size:12px;padding:7px 0;line-height:1.9;">
-              <span style="flex:1;color:var(--info);font-weight:500;"><span style="color:var(--muted);font-size:10px;font-weight:600;margin-right:4px;">[${b.id}]</span>${nick}${n}</span>
-              ${dest?`<span class="chip info">→ [${(typeof c==='object'?c.branchId:'')||''}] ${dest}</span>`:''}
+              <span style="flex:1;color:var(--info);font-weight:500;">${nick}${n}</span>
+              ${dest?`<span class="chip info">→ ${dest}</span>`:''}
             </div>`;
           }).join('')}
         </div>` : '';
@@ -1967,7 +1967,7 @@ function renderBranches(dashboard) {
             ${missing.map(s=>{
               const n=typeof s==='object'?s.name:s;
               const nick=typeof s==='object'&&s.nickname?`(${s.nickname}) `:'';
-              return `[${b.id}] ${nick}${n}`;
+              return `${nick}${n}`;
             }).join(' · ')}
           </div>
         </div>`
@@ -1986,8 +1986,8 @@ function renderBranches(dashboard) {
       <div class="card" style="padding:18px 20px;${cs==='green'?'box-shadow:inset 4px 0 0 var(--success);':cs==='yellow'?'box-shadow:inset 4px 0 0 var(--warn);':'box-shadow:inset 4px 0 0 var(--red);'}">
         <div style="display:flex;justify-content:space-between;align-items:start;gap:10px;margin-bottom:12px;">
           <div style="min-width:0;">
-            <div class="h-2"><span style="color:var(--muted);font-size:13px;font-weight:500;margin-right:5px;">[${b.id}]</span>${b.name}</div>
-            <div class="eyebrow" style="margin-top:10px;">${b.province}</div>
+            <div class="h-2">${b.name}</div>
+            <div class="eyebrow" style="margin-top:10px;">[${b.id}] ${b.province}</div>
           </div>
           <div style="text-align:right;flex-shrink:0;">
             <div class="font-mono tabular" style="font-size:24px;font-weight:600;letter-spacing:-.02em;color:${numCol};">${actual}<span style="color:var(--faint);font-weight:400;">/${total}</span></div>
@@ -2024,7 +2024,7 @@ function renderAbsent(dashboard) {
       <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
         <div>
           <div class="h-2">${b.name}</div>
-          <div class="eyebrow" style="margin-top:10px;">${b.province} · รวม ${b.total||0} คน</div>
+          <div class="eyebrow" style="margin-top:10px;">[${b.id}] ${b.province} · รวม ${b.total||0} คน</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:end;">
           ${absent.length?`<span class="chip bad">${absent.length} ขาด</span>`:''}
@@ -2032,8 +2032,8 @@ function renderAbsent(dashboard) {
         </div>
       </div>
       <div style="padding:0 18px 14px;">
-        ${absent.map(s=>{const n=typeof s==='object'?s.name:s;const nick=typeof s==='object'&&s.nickname?`<span style="color:#C5962A;font-size:11px;font-weight:700;">(${s.nickname})</span> `:'';return`<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line-2);line-height:1.9;"><div style="width:34px;height:34px;border-radius:8px;background:var(--red-50);display:flex;align-items:center;justify-content:center;color:var(--red);font-weight:600;font-size:13px;flex-shrink:0;">${n.charAt(0)}</div><span style="font-weight:500;font-size:13px;flex:1;">${nick}${n}</span><span class="chip bad">ยังไม่เข้างาน</span></div>`;}).join('')}
-        ${crossOut.map(c=>{const n=typeof c==='object'?c.name:c;const nick=typeof c==='object'&&c.nickname?`<span style="color:var(--info);font-size:11px;font-weight:600;">(${c.nickname})</span> `:'';const dest=typeof c==='object'?(c.branchName||c.branchId):'';return`<div style="display:flex;align-items:center;gap:12px;padding:14px 0;border-top:1px solid var(--line-2);line-height:1.9;"><div style="width:34px;height:34px;border-radius:8px;background:var(--info-50);display:flex;align-items:center;justify-content:center;color:var(--info);font-weight:600;font-size:13px;flex-shrink:0;">${n.charAt(0)}</div><span style="font-weight:500;font-size:13px;flex:1;">${nick}${n}</span><span class="chip info">→ ${dest}</span></div>`;}).join('')}
+        ${absent.map(s=>{const n=typeof s==='object'?s.name:s;const nick=typeof s==='object'&&s.nickname?`<span style="color:#C5962A;font-size:11px;font-weight:700;">(${s.nickname})</span> `:'';return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line-2);line-height:1.9;"><span style="font-weight:500;font-size:13px;flex:1;">${nick}${n}</span><span class="chip bad">ยังไม่เข้างาน</span></div>`;}).join('')}
+        ${crossOut.map(c=>{const n=typeof c==='object'?c.name:c;const nick=typeof c==='object'&&c.nickname?`<span style="color:var(--info);font-size:11px;font-weight:600;">(${c.nickname})</span> `:'';const dest=typeof c==='object'?(c.branchName||c.branchId):'';return`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line-2);line-height:1.9;"><span style="font-weight:500;font-size:13px;flex:1;">${nick}${n}</span><span class="chip info">→ ${dest}</span></div>`;}).join('')}
       </div>
     </div>`;
   });
@@ -2282,13 +2282,12 @@ async function renderAbsentByDate() {
     ${res.branches.map(b => `
       <div class="card" style="box-shadow:inset 4px 0 0 var(--red);margin-bottom:12px;">
         <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;">
-          <div><div class="h-2">${b.name}</div><div class="eyebrow" style="margin-top:2px;">${b.province}</div></div>
+          <div><div class="h-2">${b.name}</div><div class="eyebrow" style="margin-top:2px;">[${b.id}] ${b.province}</div></div>
           <span class="chip bad">${b.absent.length} คน</span>
         </div>
         <div style="padding:0 18px 14px;">
           ${b.absent.map(s => `
-            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line-2);">
-              <div style="width:32px;height:32px;border-radius:8px;background:var(--red-50);color:var(--red);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;">${s.name.charAt(0)}</div>
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line-2);">
               <span style="font-weight:500;font-size:13px;flex:1;">${s.nickname?`<span style="color:#C5962A;font-size:11px;font-weight:700;">(${s.nickname})</span> `:''}${s.name}</span>
               <span class="chip bad">ไม่มา</span>
             </div>`).join('')}
