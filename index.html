@@ -2440,9 +2440,9 @@ function renderSuspicious(suspicious) {
 let _allStaff = [];
 
 function populateOfficeFilters() {
-  const opts = '<option value="">ทุกสาขา</option>' +
+  const opts = '<option value="" style="color:#000;">ทุกสาขา</option>' +
     [...branches].sort((a,b)=>String(a.id).localeCompare(String(b.id),undefined,{numeric:true}))
-      .map(b=>`<option value="${b.id}">[${b.id}] ${b.name}</option>`).join('');
+      .map(b=>`<option value="${b.id}" style="color:#000;">[${b.id}] ${b.name}</option>`).join('');
   ['absent-branch-filter','late-branch-filter','staff-branch-filter'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.innerHTML=opts;
   });
