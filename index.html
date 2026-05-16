@@ -892,18 +892,17 @@ p{line-height:1.7;}
             <div class="pose-dot" id="dot-4"></div>
           </div>
 
-          <div id="pose-card" style="padding:16px;background:var(--navy-50);border:1px solid var(--line);border-radius:16px;text-align:center;">
-            <div id="pose-step" class="eyebrow" style="color:var(--red);">ท่าที่ 1/5</div>
-            <div id="pose-emoji" style="font-size:36px;margin:6px 0;">😐</div>
-            <div id="pose-label" class="h-2">หน้าตรง</div>
-            <div id="pose-hint" class="text-xs mt-1" style="color:var(--muted);">มองตรงเข้ากล้อง ไม่ก้มหรือเงย</div>
-          </div>
-
           <div class="video-wrap viewfinder" style="aspect-ratio:3/4;max-height:46vh;">
             <video id="video-reg" autoplay muted playsinline style="transform:scaleX(-1);"></video>
             <div class="tl"></div><div class="tr"></div><div class="bl"></div><div class="br"></div>
             <div id="cap-ok" class="hidden absolute inset-0 flex items-center justify-center" style="background:rgba(15,122,74,.4);">
               <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>
+            </div>
+            <div id="pose-overlay" style="position:absolute;bottom:0;left:0;right:0;background:rgba(10,20,50,0.85);padding:12px 12px 16px;text-align:center;color:#fff;border-radius:0 0 12px 12px;pointer-events:none;">
+              <div id="po-step" style="font-size:10px;font-weight:700;letter-spacing:.08em;opacity:.6;text-transform:uppercase;">ท่าที่ 1/5</div>
+              <div id="po-emoji" style="font-size:28px;line-height:1.3;">😐</div>
+              <div id="po-label" style="font-weight:700;font-size:15px;margin-top:2px;">มองตรงเข้ากล้อง</div>
+              <div id="po-hint" style="font-size:11px;opacity:.75;margin-top:3px;">ค้างไว้ ไม่ก้มไม่เงย</div>
             </div>
           </div>
 
@@ -1210,13 +1209,15 @@ let dashData        = null;
 let currentPose     = 0;
 let currentTab      = 'branches';
 let pendingAction   = null;
+let scanHits        = 0;
+let scanLastLabel   = '';
 
 const POSES = [
-  { step:'1/5', label:'หน้าตรง',         emoji:'😐', hint:'มองตรงเข้ากล้อง ไม่ก้มหรือเงย' },
-  { step:'2/5', label:'หันซ้ายเล็กน้อย', emoji:'↖️', hint:'หันหน้าไปทางซ้ายประมาณ 20 องศา' },
-  { step:'3/5', label:'หันขวาเล็กน้อย',  emoji:'↗️', hint:'หันหน้าไปทางขวาประมาณ 20 องศา' },
-  { step:'4/5', label:'ก้มหน้าเล็กน้อย', emoji:'⬇️', hint:'ก้มหน้าลงเล็กน้อย มองต่ำกว่ากล้อง' },
-  { step:'5/5', label:'เงยหน้าเล็กน้อย', emoji:'⬆️', hint:'เงยหน้าขึ้นเล็กน้อย มองสูงกว่ากล้อง' },
+  { step:'1/5', label:'มองตรงเข้ากล้อง',  emoji:'😐', hint:'ค้างไว้ ไม่ก้มไม่เงย' },
+  { step:'2/5', label:'หันหน้าไปทางซ้าย', emoji:'←',  hint:'ประมาณ 45 องศา' },
+  { step:'3/5', label:'หันหน้าไปทางขวา',  emoji:'→',  hint:'ประมาณ 45 องศา' },
+  { step:'4/5', label:'ก้มหน้าลงมา',      emoji:'↓',  hint:'มองต่ำกว่ากล้อง' },
+  { step:'5/5', label:'เงยหน้าขึ้น',      emoji:'↑',  hint:'มองสูงกว่ากล้อง' },
 ];
 
 const TAB_TITLES = {
@@ -1385,6 +1386,7 @@ async function initScan() {
 
   changeView('scan');
   detUser = null; detBranch = null; detGps = null;
+  scanHits = 0; scanLastLabel = '';
   document.getElementById('scan-status').textContent = 'กำลังเปิดกล้อง...';
   document.getElementById('scan-hint').textContent   = '';
 
@@ -1422,8 +1424,15 @@ async function initScan() {
         ctx.strokeStyle = '#b96b00'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.roundRect(box.x, box.y, box.width, box.height, 10); ctx.stroke();
         document.getElementById('scan-hint').textContent = 'ไม่พบใบหน้าที่ลงทะเบียน';
+        scanHits = 0; scanLastLabel = '';
         return;
       }
+
+      if (match.label !== scanLastLabel) { scanHits = 0; scanLastLabel = match.label; }
+      scanHits++;
+
+      const needed = 3;
+      document.getElementById('scan-hint').textContent = `กำลังยืนยัน... (${scanHits}/${needed})`;
 
       ctx.fillStyle = 'rgba(15,122,74,.92)';
       ctx.fillRect(box.x, box.y - 30, box.width, 30);
@@ -1431,6 +1440,8 @@ async function initScan() {
       ctx.font = '600 14px "IBM Plex Sans Thai",sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(match.label, box.x + box.width/2, box.y - 10);
+
+      if (scanHits < needed) return;
 
       detUser = match.label;
       clearInterval(scanTimer); scanTimer = null;
@@ -2355,10 +2366,14 @@ async function startCapture() {
 function updatePoseUI(idx) {
   if (idx >= POSES.length) return;
   const p = POSES[idx];
-  document.getElementById('pose-step').textContent  = 'ท่าที่ ' + p.step;
-  document.getElementById('pose-emoji').textContent = p.emoji;
-  document.getElementById('pose-label').textContent = p.label;
-  document.getElementById('pose-hint').textContent  = p.hint;
+  const ov = document.getElementById('pose-overlay');
+  if (ov) {
+    ov.style.background = 'rgba(10,20,50,0.85)';
+    document.getElementById('po-step').textContent = 'ท่าที่ ' + p.step;
+    document.getElementById('po-emoji').textContent = p.emoji;
+    document.getElementById('po-label').textContent = p.label;
+    document.getElementById('po-hint').textContent  = p.hint;
+  }
   document.getElementById('btn-cap').textContent = `สแกน · ${p.label}`;
   document.getElementById('btn-cap').disabled = false;
   document.getElementById('cap-ok').classList.add('hidden');
@@ -2366,11 +2381,6 @@ function updatePoseUI(idx) {
   _save.disabled = true;
   _save.className = 'btn flex-1 py-4 rounded-2xl text-sm';
   _save.style.cssText = 'background:var(--bg-2);color:var(--faint);';
-  const _pc = document.getElementById('pose-card');
-  _pc.style.background = '';
-  _pc.style.borderColor = '';
-  document.getElementById('pose-step').style.color = '';
-  document.getElementById('pose-emoji').style.color = '';
   for (let i = 0; i < 5; i++) {
     const dot = document.getElementById('dot-' + i);
     dot.classList.remove('done','active');
@@ -2416,14 +2426,14 @@ async function captureOne() {
   if (currentPose < POSES.length) {
     setTimeout(() => updatePoseUI(currentPose), 700);
   } else {
-    document.getElementById('pose-card').style.background = 'var(--success-50)';
-    document.getElementById('pose-card').style.borderColor = '#cfe7da';
-    document.getElementById('pose-step').textContent  = 'ครบทุกท่า!';
-    document.getElementById('pose-step').style.color = 'var(--success)';
-    document.getElementById('pose-emoji').textContent = '✓';
-    document.getElementById('pose-emoji').style.color = 'var(--success)';
-    document.getElementById('pose-label').textContent = 'สแกนครบ 5 ท่าแล้ว';
-    document.getElementById('pose-hint').textContent  = 'กด "บันทึก" เพื่อลงทะเบียนพนักงาน';
+    const ov = document.getElementById('pose-overlay');
+    if (ov) {
+      ov.style.background = 'rgba(15,122,74,0.9)';
+      document.getElementById('po-step').textContent = 'ครบทุกท่า!';
+      document.getElementById('po-emoji').textContent = '✓';
+      document.getElementById('po-label').textContent = 'สแกนครบ 5 ท่าแล้ว';
+      document.getElementById('po-hint').textContent  = 'กด "บันทึก" เพื่อลงทะเบียนพนักงาน';
+    }
     document.getElementById('btn-cap').textContent    = 'ครบ 5 ท่า';
     document.getElementById('btn-cap').disabled = true;
     const save = document.getElementById('btn-save');
@@ -2472,12 +2482,6 @@ async function finalRegister() {
   document.getElementById('reg-lname').value  = '';
   document.getElementById('reg-nick').value   = '';
   document.getElementById('reg-branch').value = '';
-  // reset pose card
-  const pc = document.getElementById('pose-card');
-  pc.style.background = 'var(--navy-50)';
-  pc.style.borderColor = 'var(--line)';
-  document.getElementById('pose-step').style.color = 'var(--red)';
-  document.getElementById('pose-emoji').style.color = '';
   ['dot-0','dot-1','dot-2','dot-3','dot-4'].forEach(id => {
     const e = document.getElementById(id);
     e.classList.remove('done','active');

@@ -350,10 +350,7 @@ function addFaceDescriptors(data) {
   const values = sheet.getDataRange().getValues();
   for (let i = 1; i < values.length; i++) {
     if (values[i][0] === data.name) {
-      let existing = [];
-      try { existing = JSON.parse(values[i][2]) || []; } catch(e) {}
-      const combined = existing.concat(data.descriptors);
-      sheet.getRange(i+1, 3).setValue(JSON.stringify(combined));
+      sheet.getRange(i+1, 3).setValue(JSON.stringify(data.descriptors));
       return { success: true };
     }
   }
