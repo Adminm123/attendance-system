@@ -35,6 +35,7 @@ function doPost(e) {
       case 'getSuspiciousStaff':  return res(getSuspiciousStaff());
       case 'getTodayAttendance':  return res(getTodayAttendance());
       case 'getEmployeeHistory':  return res(getEmployeeHistory(data));
+      case 'getStaffSummary':     return res(getStaffSummary(data));
       default: return res({ success: false, message: 'Action Not Found' });
     }
   } catch (err) { return res({ success: false, message: err.toString() }); }
@@ -699,4 +700,80 @@ function getSuspiciousStaff() {
 
   suspicious.sort((a,b) => b.issues.filter(i=>i.level==='red').length - a.issues.filter(i=>i.level==='red').length);
   return { success:true, suspicious };
+}
+
+// ─── Staff Summary Report ─────────────────────────────────────────────────────
+function getStaffSummary(data) {
+  const fromDate = data.fromDate;
+  const toDate   = data.toDate;
+  if (!fromDate || !toDate) return { success: false, message: 'กรุณาระบุช่วงวันที่' };
+
+  const diffDays = Math.round((new Date(toDate) - new Date(fromDate)) / 864e5) + 1;
+  if (diffDays < 1)  return { success: false, message: 'วันที่ไม่ถูกต้อง' };
+  if (diffDays > 31) return { success: false, message: 'เลือกช่วงวันที่ไม่เกิน 31 วัน' };
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  const allStaff = ss.getSheetByName('Staff').getDataRange().getValues().slice(1)
+    .filter(r => r[0] && r[4] !== 'Inactive');
+
+  const branchRows = ss.getSheetByName('Branches').getDataRange().getValues().slice(1).filter(r => r[0]);
+  const branchMap  = {};
+  branchRows.forEach(b => { branchMap[String(b[0])] = b[1]; });
+
+  const attRows = ss.getSheetByName('Attendance').getDataRange().getValues().slice(1)
+    .filter(r => {
+      if (!r[0]) return false;
+      let d;
+      if (r[2] instanceof Date) { d = fmtDate(r[2]); }
+      else { const p = new Date(String(r[2]).trim()); d = isNaN(p) ? String(r[2]).trim() : fmtDate(p); }
+      return d >= fromDate && d <= toDate;
+    });
+
+  // สร้างรายการวันทั้งหมดในช่วง
+  const allDays = [];
+  const cur = new Date(fromDate);
+  const end = new Date(toDate);
+  while (cur <= end) { allDays.push(fmtDate(cur)); cur.setDate(cur.getDate() + 1); }
+
+  // จัดกลุ่ม attendance ตามชื่อ
+  const byName = {};
+  attRows.forEach(r => {
+    const name = r[0];
+    if (!byName[name]) byName[name] = [];
+    byName[name].push(r);
+  });
+
+  // คำนวณสถิติแต่ละคน
+  const summary = allStaff.map(s => {
+    const name = s[0], nickname = s[1]||'', branchId = String(s[3]);
+    const recs  = byName[name] || [];
+    const inR   = recs.filter(r => r[3] === 'IN');
+    const outR  = recs.filter(r => r[3] === 'OUT');
+
+    const lateRecs  = inR.filter(r => r[9] === 'สาย');
+    const lateDays  = lateRecs.length;
+    const lateMins  = lateRecs.reduce((s,r) => s + (Number(r[10])||0), 0);
+
+    const inDates   = new Set(inR.map(r => { let d; if(r[2] instanceof Date){d=fmtDate(r[2]);}else{const p=new Date(String(r[2]).trim());d=isNaN(p)?String(r[2]).trim():fmtDate(p);} return d; }));
+    const absentDays = allDays.filter(d => !inDates.has(d)).length;
+
+    const earlyRecs = outR.filter(r => r[9] === 'ออกก่อนเวลา');
+    const earlyDays = earlyRecs.length;
+    const earlyMins = earlyRecs.reduce((s,r) => s + (Number(r[10])||0), 0);
+
+    return { name, nickname, branchId, branchName: branchMap[branchId]||branchId, lateDays, lateMins, absentDays, earlyDays, earlyMins };
+  });
+
+  // จัดกลุ่มตามสาขา เรียง ID น้อย→มาก
+  const byBranch = {};
+  summary.forEach(s => {
+    if (!byBranch[s.branchId]) byBranch[s.branchId] = { id: s.branchId, name: s.branchName, staff: [] };
+    byBranch[s.branchId].staff.push(s);
+  });
+
+  const branches = Object.values(byBranch)
+    .sort((a,b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
+
+  return { success: true, branches, totalDays: diffDays };
 }
