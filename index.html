@@ -227,6 +227,8 @@ body{
   0%,100%{box-shadow:0 0 12px rgba(197,150,42,0.45),inset 0 0 6px rgba(197,150,42,0.08);}
   50%{box-shadow:0 0 28px rgba(197,150,42,0.85),0 0 10px rgba(255,215,0,0.4),inset 0 0 10px rgba(197,150,42,0.15);}
 }
+.load-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#C5962A;opacity:.3;animation:dot-bounce .9s ease-in-out infinite;}
+@keyframes dot-bounce{0%,80%,100%{opacity:.3;transform:scale(.8);}40%{opacity:1;transform:scale(1.2);}}
 
 /* ── Video frame ─────────────────────────────────────── */
 .video-wrap{
@@ -626,9 +628,21 @@ p{line-height:1.7;}
 <body>
 
 <!-- ═══════════════ LOADING OVERLAY ═══════════════ -->
-<div id="loading-overlay" class="hidden fixed inset-0 flex flex-col items-center justify-center gap-3">
+<div id="loading-overlay" class="hidden fixed inset-0 flex flex-col items-center justify-center gap-4" style="background:linear-gradient(160deg,var(--navy-950) 0%,var(--navy-900) 100%);">
+  <div style="text-align:center;margin-bottom:4px;">
+    <div class="brand-mark" style="margin:0 auto 14px;width:52px;height:52px;border-radius:15px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);">
+      <span style="font-size:24px;">A</span>
+    </div>
+    <div class="gold-text" style="font-size:16px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;">Attendance</div>
+    <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.12em;text-transform:uppercase;margin-top:4px;">Face · GPS</div>
+  </div>
   <div class="spinner"></div>
-  <p id="loading-txt" class="text-xs font-medium" style="color:#C5962A;letter-spacing:.06em;font-weight:600;">กำลังโหลด...</p>
+  <p id="loading-txt" style="color:rgba(197,150,42,.8);font-size:12px;letter-spacing:.06em;font-weight:600;">กำลังโหลด...</p>
+  <div style="display:flex;gap:7px;margin-top:2px;">
+    <span class="load-dot"></span>
+    <span class="load-dot" style="animation-delay:.18s"></span>
+    <span class="load-dot" style="animation-delay:.36s"></span>
+  </div>
 </div>
 
 <!-- ═══════════════ MOBILE SHELL ═══════════════ -->
@@ -1417,8 +1431,8 @@ async function doLogin() {
   badge.textContent = r.role === 'office' ? 'OFFICE' : 'MANAGER';
   badge.classList.remove('hidden');
   document.getElementById('nav-signin').classList.add('hidden');
-  if (r.role === 'office')  { await loadOfficeDash(); changeView('office'); }
-  else                      { await loadMgrDash();    changeView('manager'); }
+  if (r.role === 'office')  { await loadOfficeDash(true); changeView('office'); loading(false); }
+  else                      { await loadMgrDash();        changeView('manager'); }
 }
 
 // ── SCAN ───────────────────────────────────────────────────────
@@ -1845,14 +1859,14 @@ async function doLog(type) {
 }
 
 // ── OFFICE DASHBOARD ───────────────────────────────────────────
-async function loadOfficeDash() {
+async function loadOfficeDash(keepLoading = false) {
   loading(true, 'โหลด Dashboard...');
   const [dashRes, staffRes, suspRes] = await Promise.all([
     api('getAdminDashboard'),
     api('getStaffList', { role: 'office' }),
     api('getSuspiciousStaff')
   ]);
-  loading(false);
+  if (!keepLoading) loading(false);
   dashData = dashRes;
 
   const now = new Date();
