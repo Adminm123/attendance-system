@@ -751,18 +751,23 @@ function getStaffSummary(data) {
     const inR   = recs.filter(r => r[3] === 'IN');
     const outR  = recs.filter(r => r[3] === 'OUT');
 
-    const lateRecs  = inR.filter(r => r[9] === 'สาย');
-    const lateDays  = lateRecs.length;
-    const lateMins  = lateRecs.reduce((s,r) => s + (Number(r[10])||0), 0);
+    const getD = r => { let d; if(r[2] instanceof Date){d=fmtDate(r[2]);}else{const p=new Date(String(r[2]).trim());d=isNaN(p)?String(r[2]).trim():fmtDate(p);} return d; };
 
-    const inDates   = new Set(inR.map(r => { let d; if(r[2] instanceof Date){d=fmtDate(r[2]);}else{const p=new Date(String(r[2]).trim());d=isNaN(p)?String(r[2]).trim():fmtDate(p);} return d; }));
-    const absentDays = allDays.filter(d => !inDates.has(d)).length;
+    const lateRecs   = inR.filter(r => r[9] === 'สาย');
+    const lateDays   = lateRecs.length;
+    const lateMins   = lateRecs.reduce((s,r) => s + (Number(r[10])||0), 0);
+    const lateDates  = lateRecs.map(r => ({ date: getD(r), mins: Number(r[10])||0 }));
 
-    const earlyRecs = outR.filter(r => r[9] === 'ออกก่อนเวลา');
-    const earlyDays = earlyRecs.length;
-    const earlyMins = earlyRecs.reduce((s,r) => s + (Number(r[10])||0), 0);
+    const inDates    = new Set(inR.map(getD));
+    const absentList = allDays.filter(d => !inDates.has(d));
+    const absentDays = absentList.length;
 
-    return { name, nickname, branchId, branchName: branchMap[branchId]||branchId, lateDays, lateMins, absentDays, earlyDays, earlyMins };
+    const earlyRecs  = outR.filter(r => r[9] === 'ออกก่อนเวลา');
+    const earlyDays  = earlyRecs.length;
+    const earlyMins  = earlyRecs.reduce((s,r) => s + (Number(r[10])||0), 0);
+    const earlyDates = earlyRecs.map(r => ({ date: getD(r), mins: Number(r[10])||0 }));
+
+    return { name, nickname, branchId, branchName: branchMap[branchId]||branchId, lateDays, lateMins, lateDates, absentDays, absentDates: absentList, earlyDays, earlyMins, earlyDates };
   });
 
   // จัดกลุ่มตามสาขา เรียง ID น้อย→มาก
