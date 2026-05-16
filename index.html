@@ -2269,14 +2269,16 @@ function renderBranches(dashboard) {
             <div class="h-2">${b.name}</div>
             <div class="eyebrow" style="margin-top:10px;">[${b.id}] ${b.province}</div>
           </div>
-          <div style="text-align:right;flex-shrink:0;">
-            <div class="font-mono tabular" style="font-size:24px;font-weight:600;letter-spacing:-.02em;color:${numCol};">${actual}<span style="color:var(--faint);font-weight:400;">/${total}</span></div>
-            <div style="font-size:11px;color:${numCol};font-weight:600;text-align:right;margin-top:1px;">${Math.round(pct)}%</div>
-            <div style="margin-top:2px;">${statusLabel}</div>
+          <div style="display:flex;gap:8px;flex-shrink:0;align-items:stretch;">
+            <div style="background:var(--success-50);border:1px solid rgba(15,122,74,.15);border-radius:12px;padding:10px 14px;text-align:center;min-width:62px;">
+              <div style="font-size:9px;font-weight:700;color:var(--success);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">มาแล้ว</div>
+              <div class="font-mono tabular" style="font-size:22px;font-weight:800;letter-spacing:-.02em;color:${numCol};line-height:1;">${actual}<span style="font-size:13px;color:var(--faint);font-weight:400;">/${total}</span></div>
+            </div>
+            <div style="background:var(--red-50);border:1px solid rgba(204,0,0,.12);border-radius:12px;padding:10px 14px;text-align:center;min-width:62px;">
+              <div style="font-size:9px;font-weight:700;color:var(--red);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;">ยังไม่มา</div>
+              <div class="font-mono tabular" style="font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--red);line-height:1;">${missing.length}</div>
+            </div>
           </div>
-        </div>
-        <div style="height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin-bottom:10px;">
-          <div style="height:100%;border-radius:3px;width:${pct}%;background:${barCol};transition:width .6s ease;"></div>
         </div>
         ${b.openTime||b.closeTime?`
           <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.02em;">
