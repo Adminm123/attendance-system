@@ -210,8 +210,6 @@ body{
 
 /* ── Loading overlay ─────────────────────────────────── */
 #loading-overlay{
-  background:rgba(255,255,255,.92);
-  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   z-index:9999;
 }
 .spinner{
@@ -628,22 +626,13 @@ p{line-height:1.7;}
 <body>
 
 <!-- ═══════════════ LOADING OVERLAY ═══════════════ -->
-<div id="loading-overlay" class="hidden fixed inset-0 flex flex-col items-center justify-center gap-3">
-  <div class="spinner"></div>
-  <p id="loading-txt" class="text-xs font-medium" style="color:#C5962A;letter-spacing:.06em;font-weight:600;">กำลังโหลด...</p>
-</div>
-
-<!-- ═══════════════ OFFICE ENTRY LOADING ═══════════════ -->
-<div id="office-entry-overlay" class="hidden fixed inset-0 flex flex-col items-center justify-center gap-4" style="background:linear-gradient(160deg,var(--navy-950) 0%,var(--navy-900) 100%);z-index:9999;">
+<div id="loading-overlay" class="hidden fixed inset-0 flex flex-col items-center justify-center gap-4" style="background:linear-gradient(160deg,var(--navy-950) 0%,var(--navy-900) 100%);">
   <div style="text-align:center;margin-bottom:4px;">
-    <div class="brand-mark" style="margin:0 auto 14px;width:56px;height:56px;border-radius:16px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);">
-      <span style="font-size:26px;">A</span>
-    </div>
     <div class="gold-text" style="font-size:17px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;">Attendance</div>
-    <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.12em;text-transform:uppercase;margin-top:4px;">Office Console</div>
+    <div style="font-size:9px;color:rgba(255,255,255,.3);letter-spacing:.12em;text-transform:uppercase;margin-top:4px;">Face · GPS</div>
   </div>
   <div class="spinner"></div>
-  <p style="color:rgba(197,150,42,.8);font-size:12px;letter-spacing:.06em;font-weight:600;">กำลังโหลด Dashboard...</p>
+  <p id="loading-txt" style="color:rgba(197,150,42,.8);font-size:12px;letter-spacing:.06em;font-weight:600;">กำลังโหลด...</p>
   <div style="display:flex;gap:7px;margin-top:2px;">
     <span class="load-dot"></span>
     <span class="load-dot" style="animation-delay:.18s"></span>
@@ -1437,13 +1426,8 @@ async function doLogin() {
   badge.textContent = r.role === 'office' ? 'OFFICE' : 'MANAGER';
   badge.classList.remove('hidden');
   document.getElementById('nav-signin').classList.add('hidden');
-  if (r.role === 'office') {
-    loading(false);
-    document.getElementById('office-entry-overlay').classList.remove('hidden');
-    await loadOfficeDash(true);
-    changeView('office');
-    document.getElementById('office-entry-overlay').classList.add('hidden');
-  } else { await loadMgrDash(); changeView('manager'); }
+  if (r.role === 'office')  { await loadOfficeDash(true); changeView('office'); loading(false); }
+  else                      { await loadMgrDash();        changeView('manager'); }
 }
 
 // ── SCAN ───────────────────────────────────────────────────────
