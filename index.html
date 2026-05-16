@@ -2583,56 +2583,50 @@ async function renderReport() {
   const thM = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   function fd(d){ const p=d.split('-'); return `${parseInt(p[2])} ${thM[parseInt(p[1])-1]}`; }
 
+  const rows = r.branches.map(b => {
+    const branchRow = `<tr>
+      <td colspan="6" style="padding:10px 12px;background:var(--navy-50);font-weight:700;font-size:12px;color:var(--navy-900);border-top:2px solid var(--navy-200);">
+        [${b.id}] ${b.name}
+      </td>
+    </tr>`;
+    const staffRows = b.staff.map(s => {
+      const sid       = encodeURIComponent(s.name);
+      const absentKey = `_rpt_absent_${sid}`;
+      const lateKey   = `_rpt_late_${sid}`;
+      const earlyKey  = `_rpt_early_${sid}`;
+      window[absentKey] = s.absentDates||[];
+      window[lateKey]   = s.lateDates||[];
+      window[earlyKey]  = s.earlyDates||[];
+      const cs = 'cursor:pointer;text-decoration:underline dotted;';
+      return `<tr style="border-top:1px solid var(--line-2);">
+        <td style="padding:9px 10px;font-size:12px;font-weight:500;">${s.nickname?`<span style="color:#C5962A;font-size:10px;">(${s.nickname})</span> `:''}${s.name}</td>
+        <td style="padding:9px 6px;text-align:center;"><span onclick="showReportDates('${s.name}','ขาดงาน','absent','${absentKey}')" style="${s.absentDays>0?'color:var(--red);font-weight:700;'+cs:'color:var(--muted);'}">${s.absentDays}</span></td>
+        <td style="padding:9px 6px;text-align:center;"><span onclick="showReportDates('${s.name}','มาสาย','late','${lateKey}')" style="${s.lateDays>0?'color:var(--warn);font-weight:700;'+cs:'color:var(--muted);'}">${s.lateDays}</span></td>
+        <td style="padding:9px 6px;text-align:center;"><span style="${s.lateMins>0?'color:var(--warn);font-weight:700;':''}">${s.lateMins}</span></td>
+        <td style="padding:9px 6px;text-align:center;"><span onclick="showReportDates('${s.name}','ออกก่อนเวลา','early','${earlyKey}')" style="${s.earlyDays>0?'color:var(--red);font-weight:700;'+cs:'color:var(--muted);'}">${s.earlyDays}</span></td>
+        <td style="padding:9px 6px;text-align:center;"><span style="${s.earlyMins>0?'color:var(--red);font-weight:700;':''}">${s.earlyMins}</span></td>
+      </tr>`;
+    }).join('');
+    return branchRow + staffRows;
+  }).join('');
+
   content.innerHTML = `
-    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;text-align:right;">${fd(from)} – ${fd(to)} · รวม ${r.totalDays} วัน</div>
-    ${r.branches.map(b => `
-      <div style="margin-bottom:20px;">
-        <div style="font-weight:700;font-size:13px;color:var(--navy-900);background:var(--navy-50);padding:8px 12px;border-radius:10px;margin-bottom:6px;border-left:3px solid var(--navy-700);">
-          [${b.id}] ${b.name}
-        </div>
-        <div style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:12px;">
-            <thead>
-              <tr style="background:#f7f8fb;color:var(--muted);font-size:10px;letter-spacing:.06em;text-transform:uppercase;">
-                <th style="padding:8px 10px;text-align:left;font-weight:700;">ชื่อ</th>
-                <th style="padding:8px 6px;text-align:center;font-weight:700;">ขาด<br>(วัน)</th>
-                <th style="padding:8px 6px;text-align:center;font-weight:700;">สาย<br>(วัน)</th>
-                <th style="padding:8px 6px;text-align:center;font-weight:700;">รวมสาย<br>(นาที)</th>
-                <th style="padding:8px 6px;text-align:center;font-weight:700;">ออกก่อน<br>(วัน)</th>
-                <th style="padding:8px 6px;text-align:center;font-weight:700;">รวมออกก่อน<br>(นาที)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${b.staff.map(s => {
-                const sid = encodeURIComponent(s.name);
-                const absentKey  = `_rpt_absent_${sid}`;
-                const lateKey    = `_rpt_late_${sid}`;
-                const earlyKey   = `_rpt_early_${sid}`;
-                window[absentKey] = s.absentDates||[];
-                window[lateKey]   = s.lateDates||[];
-                window[earlyKey]  = s.earlyDates||[];
-                const clickStyle  = 'cursor:pointer;text-decoration:underline dotted;';
-                return `
-                <tr style="border-top:1px solid var(--line-2);">
-                  <td style="padding:10px 10px;">
-                    <div style="font-weight:600;">${s.nickname?`<span style="color:#C5962A;font-size:10px;">(${s.nickname})</span> `:''}${s.name}</div>
-                  </td>
-                  <td style="padding:10px 6px;text-align:center;">
-                    <span onclick="showReportDates('${s.name}','ขาดงาน','absent','${absentKey}')" style="${s.absentDays>0?'color:var(--red);font-weight:700;'+clickStyle:''}${s.absentDays===0?'color:var(--muted);':''}">${s.absentDays}</span>
-                  </td>
-                  <td style="padding:10px 6px;text-align:center;">
-                    <span onclick="showReportDates('${s.name}','มาสาย','late','${lateKey}')" style="${s.lateDays>0?'color:var(--warn);font-weight:700;'+clickStyle:''}${s.lateDays===0?'color:var(--muted);':''}">${s.lateDays}</span>
-                  </td>
-                  <td style="padding:10px 6px;text-align:center;"><span style="${s.lateMins>0?'color:var(--warn);font-weight:700;':''}">${s.lateMins}</span></td>
-                  <td style="padding:10px 6px;text-align:center;">
-                    <span onclick="showReportDates('${s.name}','ออกก่อนเวลา','early','${earlyKey}')" style="${s.earlyDays>0?'color:var(--red);font-weight:700;'+clickStyle:''}${s.earlyDays===0?'color:var(--muted);':''}">${s.earlyDays}</span>
-                  </td>
-                  <td style="padding:10px 6px;text-align:center;"><span style="${s.earlyMins>0?'color:var(--red);font-weight:700;':''}">${s.earlyMins}</span></td>
-                </tr>`;}).join('')}
-            </tbody>
-          </table>
-        </div>
-      </div>`).join('')}`;
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;text-align:right;">${fd(from)} – ${fd(to)} · รวม ${r.totalDays} วัน</div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:#f0f2f7;color:var(--muted);font-size:10px;letter-spacing:.05em;text-transform:uppercase;position:sticky;top:0;">
+            <th style="padding:9px 10px;text-align:left;font-weight:700;min-width:140px;">ชื่อ</th>
+            <th style="padding:9px 8px;text-align:center;font-weight:700;min-width:52px;">ขาด<br>(วัน)</th>
+            <th style="padding:9px 8px;text-align:center;font-weight:700;min-width:52px;">สาย<br>(วัน)</th>
+            <th style="padding:9px 8px;text-align:center;font-weight:700;min-width:60px;">รวมสาย<br>(นาที)</th>
+            <th style="padding:9px 8px;text-align:center;font-weight:700;min-width:62px;">ออกก่อน<br>(วัน)</th>
+            <th style="padding:9px 8px;text-align:center;font-weight:700;min-width:70px;">รวมออกก่อน<br>(นาที)</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 function switchTab(tab) {
