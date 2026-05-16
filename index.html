@@ -439,7 +439,7 @@ body.office-active .office-shell{display:flex;}
   .office-content{padding:16px 14px !important;}
   .office-topbar{padding:14px 16px !important;}
   .office-hamburger{display:flex !important;}
-  .kpi-grid{grid-template-columns:repeat(2,1fr) !important;gap:12px !important;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr) !important;gap:10px !important;}
 }
 .office-hamburger{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:9px;background:transparent;border:1px solid var(--line);cursor:pointer;}
 
@@ -504,7 +504,7 @@ body.office-active .office-shell{display:flex;}
 
 .office-content{padding:28px 32px;background:#f7f8fb;flex:1;}
 
-.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;}
 .kpi{
   background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-800) 100%);
   border:none;border-radius:16px;padding:18px 20px;
@@ -1059,16 +1059,13 @@ p{line-height:1.7;}
       <div id="kpi-strip" class="kpi-grid desktop-only" style="margin-bottom:22px;">
         <div class="kpi">
           <span class="lbl">วันนี้ มาแล้ว</span>
-          <div style="display:flex;align-items:baseline;gap:8px;">
-            <span class="num tabular" id="kpi-present">—</span>
-            <span id="kpi-present-pct" style="font-size:14px;font-weight:700;color:rgba(255,255,255,.5);">—%</span>
-          </div>
+          <span class="num tabular" id="kpi-present">—</span>
           <span class="delta">จาก <span id="kpi-total" class="tabular">—</span> คน</span>
         </div>
         <div class="kpi acc-red">
           <span class="lbl">ยังไม่เข้างาน</span>
           <span class="num tabular" id="kpi-absent">—</span>
-          <span class="delta" id="kpi-absent-pct">—</span>
+          <span class="delta">คน</span>
         </div>
         <div class="kpi acc-warn">
           <span class="lbl">มาสาย</span>
@@ -1079,6 +1076,11 @@ p{line-height:1.7;}
           <span class="lbl">สาขาครบ</span>
           <span class="num tabular" id="kpi-full">—</span>
           <span class="delta" id="kpi-branches">จาก <span class="tabular">—</span> สาขา</span>
+        </div>
+        <div class="kpi" style="background:linear-gradient(135deg,#2a4a7a 0%,#4a6896 100%);">
+          <span class="lbl">% เข้างาน</span>
+          <span class="num tabular" id="kpi-present-pct" style="color:#D4AF37;">—%</span>
+          <span class="delta">ของพนักงานทั้งหมด</span>
         </div>
       </div>
 
@@ -2159,7 +2161,6 @@ async function loadOfficeDash(keepLoading = false) {
   setKPI('kpi-full', fullBranches);
   document.getElementById('kpi-total').textContent = totalStaff;
   document.getElementById('kpi-branches').innerHTML = `จาก <span class="tabular">${dashboard.length}</span> สาขา`;
-  document.getElementById('kpi-absent-pct').textContent = totalStaff ? `${Math.round(totalAbsent/totalStaff*100)}% ของทั้งหมด` : '—';
   document.getElementById('kpi-present-pct').textContent = totalStaff ? `${Math.round(totalPresent/totalStaff*100)}%` : '—';
 
   populateOfficeFilters();
