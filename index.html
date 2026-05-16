@@ -715,6 +715,18 @@ p{line-height:1.7;}
         <div class="eyebrow" style="margin-bottom:8px;">ประวัติวันนี้</div>
         <div id="home-history-list" class="space-y-1.5" style="max-height:240px;overflow-y:auto;"></div>
       </div>
+
+      <!-- ปุ่มประวัติการเข้าทำงาน -->
+      <button onclick="openMyHistory()" style="width:100%;margin-top:16px;padding:16px 20px;background:var(--navy-50);border:1.5px solid var(--line);border-radius:16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--navy-100)'" onmouseout="this.style.background='var(--navy-50)'">
+        <div style="width:40px;height:40px;border-radius:11px;background:var(--navy-900);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
+        </div>
+        <div style="text-align:left;">
+          <div style="font-weight:700;font-size:14px;color:var(--ink);">ประวัติการเข้าทำงาน</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">สแกนใบหน้าเพื่อดูสถิติตนเอง</div>
+        </div>
+        <svg style="margin-left:auto;flex-shrink:0;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
     </section>
 
     <!-- ════════ SCANNING ════════ -->
@@ -1150,6 +1162,63 @@ p{line-height:1.7;}
   </div><!-- /main -->
 </div><!-- /office-shell -->
 
+
+<!-- ═══════════════ MY HISTORY MODAL ═══════════════ -->
+<div id="modal-my-history" class="hidden modal-back" style="align-items:flex-end;" onclick="if(event.target===this)closeMyHistory()">
+  <div class="modal-card" style="max-width:520px;border-bottom-left-radius:0;border-bottom-right-radius:0;max-height:92vh;display:flex;flex-direction:column;">
+
+    <!-- Header -->
+    <div style="padding:18px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div>
+        <div class="h-2">ประวัติการเข้าทำงาน</div>
+        <div id="mh-subtitle" class="eyebrow" style="margin-top:3px;">สแกนใบหน้าเพื่อระบุตัวตน</div>
+      </div>
+      <button onclick="closeMyHistory()" class="btn btn-ghost px-4 py-2 rounded-xl text-xs">ปิด</button>
+    </div>
+
+    <!-- Step 1: Scan -->
+    <div id="mh-step-scan" style="padding:20px;display:flex;flex-direction:column;gap:14px;">
+      <div class="video-wrap viewfinder" style="aspect-ratio:3/4;max-height:44vh;">
+        <video id="video-hist" autoplay muted playsinline style="transform:scaleX(-1);"></video>
+        <div class="tl"></div><div class="tr"></div><div class="bl"></div><div class="br"></div>
+        <div id="mh-pose-overlay" style="position:absolute;bottom:0;left:0;right:0;background:rgba(10,20,50,0.78);padding:8px 12px;display:flex;align-items:center;gap:8px;color:#fff;border-radius:0 0 12px 12px;pointer-events:none;">
+          <span style="font-size:20px;">😐</span>
+          <div style="flex:1;">
+            <div style="font-weight:700;font-size:13px;">หันหน้าตรงเข้ากล้อง</div>
+            <div id="mh-scan-hint" style="font-size:11px;opacity:.7;">กดปุ่มด้านล่างเพื่อสแกน</div>
+          </div>
+        </div>
+      </div>
+      <button onclick="captureMyHistory()" id="mh-btn-scan" class="btn btn-primary w-full py-4 rounded-2xl btn-glow">สแกนใบหน้า</button>
+    </div>
+
+    <!-- Step 2: Date + Results -->
+    <div id="mh-step-result" class="hidden" style="display:flex;flex-direction:column;overflow:hidden;">
+      <!-- ชื่อ + เลือกวัน -->
+      <div style="padding:16px 20px;border-bottom:1px solid var(--line-2);flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="width:36px;height:36px;border-radius:9px;background:var(--navy-900);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          </div>
+          <div>
+            <div id="mh-name" style="font-weight:700;font-size:14px;"></div>
+            <div id="mh-branch" style="font-size:11px;color:var(--muted);"></div>
+          </div>
+          <button onclick="resetMyHistory()" style="margin-left:auto;font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;">สแกนใหม่</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <input type="date" id="mh-from" class="inp inp-sm" style="flex:1;">
+          <span style="color:var(--muted);font-size:12px;">ถึง</span>
+          <input type="date" id="mh-to" class="inp inp-sm" style="flex:1;">
+          <button onclick="loadMyHistory()" class="btn btn-primary px-4 py-2 rounded-xl text-sm" style="flex-shrink:0;">ดู</button>
+        </div>
+      </div>
+      <!-- ผลลัพธ์ -->
+      <div id="mh-result" style="overflow-y:auto;padding:16px 20px;flex:1;"></div>
+    </div>
+
+  </div>
+</div>
 
 <!-- ═══════════════ EMPLOYEE HISTORY MODAL ═══════════════ -->
 <div id="modal-emp-history" class="hidden modal-back" style="align-items:flex-end;" onclick="if(event.target===this)closeEmpHistory()">
@@ -1809,6 +1878,150 @@ async function showEmployeeHistory(name) {
   document.getElementById('modal-emp-history').classList.remove('hidden');
 }
 function closeEmpHistory() { document.getElementById('modal-emp-history').classList.add('hidden'); }
+
+// ── MY HISTORY ────────────────────────────────────────────────
+let myHistStream = null;
+let myHistName   = '';
+
+async function openMyHistory() {
+  if (!modelsReady) { toast('AI ยังโหลดไม่เสร็จ', 'warn'); return; }
+  if (!faceMatcher) { toast('ยังไม่มีข้อมูลพนักงาน', 'warn'); return; }
+  document.getElementById('modal-my-history').classList.remove('hidden');
+  document.getElementById('mh-step-scan').style.display = 'flex';
+  document.getElementById('mh-step-result').classList.add('hidden');
+  document.getElementById('mh-scan-hint').textContent = 'กดปุ่มด้านล่างเพื่อสแกน';
+  document.getElementById('mh-btn-scan').disabled = false;
+  if (myHistStream) { myHistStream.getTracks().forEach(t => t.stop()); myHistStream = null; }
+  try {
+    myHistStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+    document.getElementById('video-hist').srcObject = myHistStream;
+  } catch(e) { toast('เปิดกล้องไม่ได้', 'error'); closeMyHistory(); }
+}
+
+async function captureMyHistory() {
+  const btn = document.getElementById('mh-btn-scan');
+  btn.disabled = true;
+  document.getElementById('mh-scan-hint').textContent = 'กำลังสแกน...';
+  const det = await faceapi.detectSingleFace(document.getElementById('video-hist'))
+    .withFaceLandmarks().withFaceDescriptor();
+  if (!det) {
+    document.getElementById('mh-scan-hint').textContent = 'ไม่พบใบหน้า ลองใหม่';
+    btn.disabled = false; return;
+  }
+  const match = faceMatcher.findBestMatch(det.descriptor);
+  if (match.label === 'unknown') {
+    document.getElementById('mh-scan-hint').textContent = 'ไม่พบในระบบ ลองใหม่';
+    btn.disabled = false; return;
+  }
+  myHistName = match.label;
+  if (myHistStream) { myHistStream.getTracks().forEach(t => t.stop()); myHistStream = null; }
+  document.getElementById('mh-step-scan').style.display = 'none';
+  document.getElementById('mh-step-result').classList.remove('hidden');
+  document.getElementById('mh-name').textContent = myHistName;
+  const homeId = staffBranches[myHistName] || '';
+  const br = branches.find(b => b.id === homeId);
+  document.getElementById('mh-branch').textContent = br ? `[${br.id}] ${br.name}` : homeId;
+  document.getElementById('mh-subtitle').textContent = 'เลือกช่วงวันที่';
+  const today = new Date().toISOString().slice(0,10);
+  const monthAgo = new Date(Date.now() - 30*864e5).toISOString().slice(0,10);
+  document.getElementById('mh-from').value = monthAgo;
+  document.getElementById('mh-to').value   = today;
+  document.getElementById('mh-result').innerHTML = '';
+  await loadMyHistory();
+}
+
+async function loadMyHistory() {
+  const from = document.getElementById('mh-from').value;
+  const to   = document.getElementById('mh-to').value;
+  if (!from || !to) { toast('กรุณาเลือกช่วงวันที่', 'warn'); return; }
+  document.getElementById('mh-result').innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">กำลังโหลด...</div>';
+  const r = await api('getEmployeeHistory', { name: myHistName });
+  if (!r.success) { document.getElementById('mh-result').innerHTML = '<div style="color:var(--red);text-align:center;padding:20px;">โหลดข้อมูลล้มเหลว</div>'; return; }
+
+  const recs = r.records.filter(rec => rec.date >= from && rec.date <= to);
+
+  // คำนวณสถิติ
+  const inRecs  = recs.filter(r => r.type === 'IN');
+  const outRecs = recs.filter(r => r.type === 'OUT');
+  const workDays = new Set(inRecs.map(r => r.date)).size;
+  const totalLate = inRecs.filter(r => r.status === 'สาย').reduce((s,r) => s + (r.lateMins||0), 0);
+  const earlyOut  = outRecs.filter(r => r.status === 'ออกก่อนเวลา').length;
+
+  // คำนวณวันขาด (เทียบกับจำนวนวันในช่วง)
+  const dFrom = new Date(from), dTo = new Date(to);
+  const totalDays = Math.round((dTo - dFrom) / 864e5) + 1;
+  const absentDays = totalDays - workDays;
+
+  const thM = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  function fmtD(d) { const p=d.split('-'); return `${parseInt(p[2])} ${thM[parseInt(p[1])-1]} ${parseInt(p[0])+543}`; }
+
+  // สรุป
+  const summaryHtml = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px;">
+      <div style="background:var(--success-50);border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:var(--success);">${workDays}</div>
+        <div style="font-size:11px;color:var(--success);font-weight:600;margin-top:2px;">มาทำงาน (วัน)</div>
+      </div>
+      <div style="background:var(--red-50);border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:var(--red);">${absentDays}</div>
+        <div style="font-size:11px;color:var(--red);font-weight:600;margin-top:2px;">ไม่มีข้อมูล (วัน)</div>
+      </div>
+      <div style="background:#fff8ed;border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:var(--warn);">${totalLate}</div>
+        <div style="font-size:11px;color:var(--warn);font-weight:600;margin-top:2px;">รวมสาย (นาที)</div>
+      </div>
+      <div style="background:var(--navy-50);border-radius:12px;padding:14px;text-align:center;">
+        <div style="font-size:28px;font-weight:700;color:var(--navy-700);">${earlyOut}</div>
+        <div style="font-size:11px;color:var(--navy-700);font-weight:600;margin-top:2px;">ออกก่อนเวลา (ครั้ง)</div>
+      </div>
+    </div>`;
+
+  if (!recs.length) {
+    document.getElementById('mh-result').innerHTML = summaryHtml + '<div style="text-align:center;padding:20px;color:var(--muted);">ไม่มีข้อมูลในช่วงนี้</div>';
+    return;
+  }
+
+  // จัดกลุ่มตามวัน
+  const byDate = {};
+  recs.forEach(rec => { if (!byDate[rec.date]) byDate[rec.date] = []; byDate[rec.date].push(rec); });
+
+  const listHtml = Object.keys(byDate).sort().reverse().map(date => {
+    const dayRecs = byDate[date];
+    const inR  = dayRecs.find(r => r.type === 'IN');
+    const outR = dayRecs.find(r => r.type === 'OUT');
+    const isLate = inR?.status === 'สาย';
+    const isEarly = outR?.status === 'ออกก่อนเวลา';
+    const borderCol = isLate ? 'var(--warn)' : 'var(--success)';
+    return `<div style="border-left:3px solid ${borderCol};padding:10px 12px;border-radius:0 10px 10px 0;background:var(--bg);margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-weight:600;font-size:13px;">${fmtD(date)}</div>
+        <div style="display:flex;gap:4px;">
+          ${isLate ? `<span class="chip warn">สาย ${inR.lateMins} น.</span>` : inR ? `<span class="chip ok">ในเวลา</span>` : ''}
+          ${isEarly ? `<span class="chip bad">ออกก่อน</span>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:6px;font-size:12px;color:var(--muted);">
+        <span>เข้า ${inR ? inR.time : '—'}</span>
+        <span>ออก ${outR ? outR.time : '—'}</span>
+        <span>${inR?.branchName || outR?.branchName || ''}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('mh-result').innerHTML = summaryHtml + `<div class="eyebrow" style="margin-bottom:8px;">รายการ ${recs.filter(r=>r.type==='IN').length} วัน</div>` + listHtml;
+}
+
+function resetMyHistory() {
+  document.getElementById('mh-step-scan').style.display = 'flex';
+  document.getElementById('mh-step-result').classList.add('hidden');
+  document.getElementById('mh-subtitle').textContent = 'สแกนใบหน้าเพื่อระบุตัวตน';
+  openMyHistory();
+}
+
+function closeMyHistory() {
+  if (myHistStream) { myHistStream.getTracks().forEach(t => t.stop()); myHistStream = null; }
+  document.getElementById('modal-my-history').classList.add('hidden');
+}
 
 async function doCheckIn()  { await doLog('IN'); }
 async function doCheckOut() {
