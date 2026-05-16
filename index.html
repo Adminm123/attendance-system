@@ -1055,14 +1055,17 @@ p{line-height:1.7;}
 
       <!-- Absent -->
       <div id="tab-absent" class="hidden">
-        <div class="card" style="padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div class="h-2">ยังไม่เข้างาน</div>
-          <div class="flex items-center gap-2">
-            <select id="absent-branch-filter" class="inp inp-sm" style="min-width:120px;" onchange="renderAbsentByDate()">
-              <option value="">ทุกสาขา</option>
+        <div style="background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-700) 100%);padding:18px 20px;border-radius:16px;margin-bottom:14px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;box-shadow:0 8px 24px -8px rgba(10,29,63,.4);">
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.14em;text-transform:uppercase;font-weight:700;">รายงาน</div>
+            <div class="h-2" style="color:#fff;margin-top:3px;">ยังไม่เข้างาน</div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <select id="absent-branch-filter" onchange="renderAbsentByDate()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;min-width:130px;">
+              <option value="" style="color:#000;">ทุกสาขา</option>
             </select>
-            <input type="date" id="absent-date" onchange="renderAbsentByDate()">
-            <button onclick="document.getElementById('absent-date').value='';renderAbsentByDate();" class="btn btn-ghost px-3 py-1.5 rounded-lg text-xs">วันนี้</button>
+            <input type="date" id="absent-date" onchange="renderAbsentByDate()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;">
+            <button onclick="document.getElementById('absent-date').value='';renderAbsentByDate();" style="background:#fff;color:var(--navy-900);font-weight:700;font-size:13px;padding:9px 18px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap;">วันนี้</button>
           </div>
         </div>
         <div id="absent-content" class="space-y-3"></div>
@@ -1070,18 +1073,21 @@ p{line-height:1.7;}
 
       <!-- Late -->
       <div id="tab-late" class="hidden card overflow-hidden">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;">
-          <div class="flex items-center gap-3">
-            <span class="h-2">มาสาย</span>
-            <span id="late-count" class="chip warn">0 คน</span>
+        <div style="background:linear-gradient(135deg,#7c3800 0%,#b96b00 100%);padding:18px 20px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:center;box-shadow:0 8px 24px -8px rgba(124,56,0,.4);">
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.14em;text-transform:uppercase;font-weight:700;">รายงาน</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:3px;">
+              <span class="h-2" style="color:#fff;">มาสาย</span>
+              <span id="late-count" style="background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;">0 คน</span>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <select id="late-branch-filter" class="inp inp-sm" style="min-width:120px;" onchange="applyLateFilter()">
-              <option value="">ทุกสาขา</option>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <select id="late-branch-filter" onchange="applyLateFilter()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;min-width:130px;">
+              <option value="" style="color:#000;">ทุกสาขา</option>
             </select>
-            <input type="date" id="late-date" onchange="renderLateByDate()">
-            <button onclick="document.getElementById('late-date').value='';renderLateByDate();" class="btn btn-ghost px-3 py-1.5 rounded-lg text-xs">วันนี้</button>
-            <button onclick="copyLateList()" class="btn btn-soft px-3 py-1.5 rounded-lg text-xs">คัดลอก</button>
+            <input type="date" id="late-date" onchange="renderLateByDate()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;">
+            <button onclick="document.getElementById('late-date').value='';renderLateByDate();" style="background:#fff;color:#7c3800;font-weight:700;font-size:13px;padding:9px 18px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap;">วันนี้</button>
+            <button onclick="copyLateList()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-weight:700;font-size:13px;padding:9px 18px;border-radius:10px;cursor:pointer;white-space:nowrap;">คัดลอก</button>
           </div>
         </div>
         <div id="late-list" style="max-height:65vh;overflow-y:auto;"></div>
