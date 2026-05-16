@@ -1097,9 +1097,13 @@ p{line-height:1.7;}
       <div id="tab-staff" class="hidden space-y-3">
         <div id="suspicious-section"></div>
         <div class="card overflow-hidden">
-          <div style="padding:12px 18px;border-bottom:1px solid var(--line-2);">
-            <select id="staff-branch-filter" class="inp inp-sm" style="min-width:160px;" onchange="applyStaffFilter()">
-              <option value="">ทุกสาขา</option>
+          <div style="background:linear-gradient(135deg,#0a5e38 0%,#0f7a4a 100%);padding:18px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;box-shadow:0 8px 24px -8px rgba(10,94,56,.4);">
+            <div>
+              <div style="font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.14em;text-transform:uppercase;font-weight:700;">รายการ</div>
+              <div class="h-2" style="color:#fff;margin-top:3px;">รายชื่อพนักงาน</div>
+            </div>
+            <select id="staff-branch-filter" onchange="applyStaffFilter()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:9px 14px;font-size:13px;font-family:inherit;min-width:160px;">
+              <option value="" style="color:#000;">ทุกสาขา</option>
             </select>
           </div>
           <table class="w-full">
@@ -1117,14 +1121,17 @@ p{line-height:1.7;}
 
       <!-- Logs -->
       <div id="tab-logs" class="hidden card overflow-hidden">
-        <div style="padding:16px 20px;border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;">
-          <div class="flex items-center gap-3">
-            <span class="h-2">ประวัติการเช็คชื่อ</span>
-            <span id="log-count" class="chip neutral"></span>
+        <div style="background:linear-gradient(135deg,#3b1f6e 0%,#5b35a0 100%);padding:18px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;box-shadow:0 8px 24px -8px rgba(59,31,110,.4);">
+          <div>
+            <div style="font-size:10px;color:rgba(255,255,255,.45);letter-spacing:.14em;text-transform:uppercase;font-weight:700;">รายการ</div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:3px;">
+              <span class="h-2" style="color:#fff;">ประวัติการเช็คชื่อ</span>
+              <span id="log-count" style="background:rgba(255,255,255,.2);color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:20px;"></span>
+            </div>
           </div>
-          <div class="flex items-center gap-2">
-            <input type="date" id="log-date" onchange="renderLogs()">
-            <button onclick="document.getElementById('log-date').value='';renderLogs();" class="btn btn-ghost px-3 py-1.5 rounded-lg text-xs">วันนี้</button>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <input type="date" id="log-date" onchange="renderLogs()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;">
+            <button onclick="document.getElementById('log-date').value='';renderLogs();" style="background:#fff;color:#3b1f6e;font-weight:700;font-size:13px;padding:9px 18px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap;">วันนี้</button>
           </div>
         </div>
         <div id="office-logs" style="max-height:65vh;overflow-y:auto;"></div>
@@ -1404,9 +1411,8 @@ function buildMatcher() {
 async function doLogin() {
   loading(true, 'ตรวจสอบ...');
   const r = await api('login', { password: document.getElementById('pass-input').value });
-  loading(false);
   document.getElementById('pass-input').value = '';
-  if (!r.success) { toast('รหัสผ่านไม่ถูกต้อง', 'error'); return; }
+  if (!r.success) { loading(false); toast('รหัสผ่านไม่ถูกต้อง', 'error'); return; }
   const badge = document.getElementById('nav-role');
   badge.textContent = r.role === 'office' ? 'OFFICE' : 'MANAGER';
   badge.classList.remove('hidden');
