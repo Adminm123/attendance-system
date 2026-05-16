@@ -1110,6 +1110,7 @@ p{line-height:1.7;}
             </select>
             <input type="date" id="absent-date" onchange="renderAbsentByDate()" style="background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:8px 12px;font-size:13px;font-family:inherit;">
             <button onclick="document.getElementById('absent-date').value='';renderAbsentByDate();" style="background:#fff;color:var(--navy-900);font-weight:700;font-size:13px;padding:9px 18px;border-radius:10px;border:none;cursor:pointer;white-space:nowrap;">วันนี้</button>
+            <button onclick="copyAbsentList()" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-weight:700;font-size:13px;padding:9px 18px;border-radius:10px;cursor:pointer;white-space:nowrap;">คัดลอก</button>
           </div>
         </div>
         <div id="absent-content" class="space-y-3"></div>
@@ -2343,7 +2344,7 @@ function renderAbsent(dashboard) {
     </div>`;
   });
   if (!html) { content.innerHTML=`<div class="card" style="padding:48px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">✓</div><div class="h-2" style="color:var(--success);">พนักงานทุกสาขาเข้างานครบ</div></div>`; return; }
-  content.innerHTML=`<div class="card" style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;box-shadow:inset 4px 0 0 var(--red);margin-bottom:12px;"><div><div class="h-2" style="color:var(--red-700);">ยังไม่เข้างาน ${totalAbsent} คน</div><div class="text-xs" style="color:var(--muted);margin-top:12px;line-height:1.9;">ณ ${nowTime()}</div></div><button onclick="copyAbsentList()" class="btn btn-soft px-3 py-2 rounded-lg text-xs">คัดลอก</button></div>${html}`;
+  content.innerHTML=`<div class="card" style="padding:12px 16px;box-shadow:inset 4px 0 0 var(--red);margin-bottom:12px;"><div class="h-2" style="color:var(--red-700);">ยังไม่เข้างาน ${totalAbsent} คน</div><div class="text-xs" style="color:var(--muted);margin-top:4px;">ณ ${nowTime()}</div></div>${html}`;
 }
 function cs2cssShadow(cs){return cs==='green'?'box-shadow:inset 4px 0 0 var(--success);':cs==='yellow'?'box-shadow:inset 4px 0 0 var(--warn);':'box-shadow:inset 4px 0 0 var(--red);';}
 
@@ -2703,7 +2704,6 @@ async function renderAbsentByDate() {
         <div class="h-2" style="color:var(--red-700);">ไม่มางาน ${res.totalAbsent} คน</div>
         <div class="text-xs" style="color:var(--muted);margin-top:2px;">${thLabel}</div>
       </div>
-      <button onclick="copyAbsentList()" class="btn btn-soft px-3 py-2 rounded-lg text-xs">คัดลอก</button>
     </div>
     ${res.branches.map(b => `
       <div class="card" style="box-shadow:inset 4px 0 0 var(--red);margin-bottom:12px;">
