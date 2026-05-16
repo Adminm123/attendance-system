@@ -506,16 +506,19 @@ body.office-active .office-shell{display:flex;}
 
 .kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
 .kpi{
-  background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;
-  display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,var(--navy-900) 0%,var(--navy-800) 100%);
+  border:none;border-radius:16px;padding:18px 20px;
+  display:flex;flex-direction:column;gap:5px;position:relative;overflow:hidden;
+  box-shadow:0 8px 24px -8px rgba(10,29,63,.35);
 }
-.kpi .lbl{font-size:11px;line-height:1.6;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:500;}
-.kpi .num{font-size:30px;line-height:1.2;font-weight:600;letter-spacing:-.02em;color:var(--ink);font-feature-settings:"tnum";}
-.kpi .delta{font-size:11px;line-height:1.6;font-weight:500;color:var(--ink-soft);}
-.kpi .accent{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--navy-900);}
-.kpi.acc-red .accent{background:var(--red);}
-.kpi.acc-warn .accent{background:var(--warn);}
-.kpi.acc-success .accent{background:var(--success);}
+.kpi::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent 50%,rgba(197,150,42,.06));pointer-events:none;}
+.kpi .lbl{font-size:10px;line-height:1.6;color:rgba(255,255,255,.45);letter-spacing:.12em;text-transform:uppercase;font-weight:700;}
+.kpi .num{font-size:30px;line-height:1.15;font-weight:800;letter-spacing:-.02em;color:#fff;font-feature-settings:"tnum";}
+.kpi .delta{font-size:11px;line-height:1.5;font-weight:500;color:rgba(255,255,255,.45);}
+.kpi .accent{display:none;}
+.kpi.acc-red .num{color:#ff8080;}
+.kpi.acc-warn .num{color:#ffc46b;}
+.kpi.acc-success .num{color:#6de0a8;}
 
 /* dashboard branch grid (desktop) */
 @media (min-width:1024px){
@@ -596,10 +599,7 @@ p{line-height:1.7;}
 .office-topbar .crumb{line-height:2.0 !important;padding:2px 0;margin-bottom:14px !important;}
 
 /* KPI cards */
-.kpi{padding:24px 24px !important;gap:14px !important;}
-.kpi .lbl{line-height:2.0 !important;padding:3px 0;}
-.kpi .num{line-height:1.4 !important;padding:4px 0;}
-.kpi .delta{line-height:2.0 !important;padding:3px 0;}
+.kpi{padding:18px 20px !important;}
 
 /* Form labels */
 .dlabel{line-height:1.7 !important;padding:2px 0;margin-bottom:8px !important;}
@@ -1055,12 +1055,31 @@ p{line-height:1.7;}
 
     <div class="office-content">
 
-      <!-- KPI strip (desktop only, branches tab) -->
+      <!-- KPI strip (branches tab only) -->
       <div id="kpi-strip" class="kpi-grid desktop-only" style="margin-bottom:22px;">
-        <div class="kpi"><div class="accent"></div><span class="lbl">วันนี้ มาแล้ว</span><span class="num tabular" id="kpi-present">—</span><span class="delta">จาก <span id="kpi-total" class="tabular">—</span> คน</span></div>
-        <div class="kpi acc-red"><div class="accent"></div><span class="lbl">ยังไม่เข้างาน</span><span class="num tabular" id="kpi-absent">—</span><span class="delta" id="kpi-absent-pct">—</span></div>
-        <div class="kpi acc-warn"><div class="accent"></div><span class="lbl">มาสาย</span><span class="num tabular" id="kpi-late">—</span><span class="delta" id="kpi-late-detail">รวมทุกสาขา</span></div>
-        <div class="kpi acc-success"><div class="accent"></div><span class="lbl">สาขาครบ</span><span class="num tabular" id="kpi-full">—</span><span class="delta" id="kpi-branches">จาก <span class="tabular">—</span> สาขา</span></div>
+        <div class="kpi">
+          <span class="lbl">วันนี้ มาแล้ว</span>
+          <div style="display:flex;align-items:baseline;gap:8px;">
+            <span class="num tabular" id="kpi-present">—</span>
+            <span id="kpi-present-pct" style="font-size:14px;font-weight:700;color:rgba(255,255,255,.5);">—%</span>
+          </div>
+          <span class="delta">จาก <span id="kpi-total" class="tabular">—</span> คน</span>
+        </div>
+        <div class="kpi acc-red">
+          <span class="lbl">ยังไม่เข้างาน</span>
+          <span class="num tabular" id="kpi-absent">—</span>
+          <span class="delta" id="kpi-absent-pct">—</span>
+        </div>
+        <div class="kpi acc-warn">
+          <span class="lbl">มาสาย</span>
+          <span class="num tabular" id="kpi-late">—</span>
+          <span class="delta">รวมทุกสาขา</span>
+        </div>
+        <div class="kpi acc-success">
+          <span class="lbl">สาขาครบ</span>
+          <span class="num tabular" id="kpi-full">—</span>
+          <span class="delta" id="kpi-branches">จาก <span class="tabular">—</span> สาขา</span>
+        </div>
       </div>
 
       <!-- mobile-only tab pills (below 1024) -->
@@ -2140,6 +2159,7 @@ async function loadOfficeDash(keepLoading = false) {
   document.getElementById('kpi-total').textContent = totalStaff;
   document.getElementById('kpi-branches').innerHTML = `จาก <span class="tabular">${dashboard.length}</span> สาขา`;
   document.getElementById('kpi-absent-pct').textContent = totalStaff ? `${Math.round(totalAbsent/totalStaff*100)}% ของทั้งหมด` : '—';
+  document.getElementById('kpi-present-pct').textContent = totalStaff ? `${Math.round(totalPresent/totalStaff*100)}%` : '—';
 
   populateOfficeFilters();
   renderBranches(dashboard);
