@@ -1058,6 +1058,9 @@ p{line-height:1.7;}
         <div class="card" style="padding:14px 18px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:14px;">
           <div class="h-2">ยังไม่เข้างาน</div>
           <div class="flex items-center gap-2">
+            <select id="absent-branch-filter" class="inp inp-sm" style="min-width:120px;" onchange="renderAbsentByDate()">
+              <option value="">ทุกสาขา</option>
+            </select>
             <input type="date" id="absent-date" onchange="renderAbsentByDate()">
             <button onclick="document.getElementById('absent-date').value='';renderAbsentByDate();" class="btn btn-ghost px-3 py-1.5 rounded-lg text-xs">วันนี้</button>
           </div>
@@ -1073,6 +1076,9 @@ p{line-height:1.7;}
             <span id="late-count" class="chip warn">0 คน</span>
           </div>
           <div class="flex items-center gap-2">
+            <select id="late-branch-filter" class="inp inp-sm" style="min-width:120px;" onchange="applyLateFilter()">
+              <option value="">ทุกสาขา</option>
+            </select>
             <input type="date" id="late-date" onchange="renderLateByDate()">
             <button onclick="document.getElementById('late-date').value='';renderLateByDate();" class="btn btn-ghost px-3 py-1.5 rounded-lg text-xs">วันนี้</button>
             <button onclick="copyLateList()" class="btn btn-soft px-3 py-1.5 rounded-lg text-xs">คัดลอก</button>
@@ -1085,6 +1091,11 @@ p{line-height:1.7;}
       <div id="tab-staff" class="hidden space-y-3">
         <div id="suspicious-section"></div>
         <div class="card overflow-hidden">
+          <div style="padding:12px 18px;border-bottom:1px solid var(--line-2);">
+            <select id="staff-branch-filter" class="inp inp-sm" style="min-width:160px;" onchange="applyStaffFilter()">
+              <option value="">ทุกสาขา</option>
+            </select>
+          </div>
           <table class="w-full">
             <thead style="background:#f7f8fb;">
               <tr>
@@ -1861,6 +1872,7 @@ async function loadOfficeDash() {
   document.getElementById('kpi-branches').innerHTML = `จาก <span class="tabular">${dashboard.length}</span> สาขา`;
   document.getElementById('kpi-absent-pct').textContent = totalStaff ? `${Math.round(totalAbsent/totalStaff*100)}% ของทั้งหมด` : '—';
 
+  populateOfficeFilters();
   renderBranches(dashboard);
   renderAbsent(dashboard);
   renderLate(dashboard);
@@ -1990,6 +2002,7 @@ function renderBranches(dashboard) {
           </div>
           <div style="text-align:right;flex-shrink:0;">
             <div class="font-mono tabular" style="font-size:24px;font-weight:600;letter-spacing:-.02em;color:${numCol};">${actual}<span style="color:var(--faint);font-weight:400;">/${total}</span></div>
+            <div style="font-size:11px;color:${numCol};font-weight:600;text-align:right;margin-top:1px;">${Math.round(pct)}%</div>
             <div style="margin-top:2px;">${statusLabel}</div>
           </div>
         </div>
@@ -2011,6 +2024,8 @@ function renderBranches(dashboard) {
 function renderAbsent(dashboard) {
   const content = document.getElementById('absent-content');
   if (!dashboard.length) { content.innerHTML='<div class="card" style="padding:40px;text-align:center;color:var(--muted);">ยังไม่มีข้อมูลสาขา</div>'; return; }
+  const filterBid = document.getElementById('absent-branch-filter')?.value||'';
+  if (filterBid) dashboard = dashboard.filter(b=>String(b.id)===filterBid);
   let totalAbsent=0, html='';
   window._absentList=[];
   dashboard.forEach(b => {
@@ -2018,7 +2033,7 @@ function renderAbsent(dashboard) {
     const crossOut= b.crossBranchOut||[];
     if (!absent.length&&!crossOut.length) return;
     totalAbsent += absent.length;
-    absent.forEach(s=>{ const n=typeof s==='object'?s.name:s; const nick=typeof s==='object'?s.nickname:''; window._absentList.push((nick?`(${nick}) `:'')+n+` [${b.name}]`); });
+    absent.forEach(s=>{ const n=typeof s==='object'?s.name:s; const nick=typeof s==='object'?s.nickname:''; window._absentList.push(`${b.id} ${n}${nick?' '+nick:''}`); });
     html += `<div class="card" style="${cs2cssShadow(b.colorStatus||'red')}margin-bottom:12px;">
       <div style="padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
         <div>
@@ -2063,7 +2078,7 @@ function renderLate(dashboard) {
   (dashboard||[]).forEach(b=>{
     (b.presentDetails||[]).filter(d=>d.isLate).forEach(d=>{
       lateStaff.push({nick:d.nickname||'', name:d.name, branch:b.name, bId:b.id, mins:d.mins, time:d.time});
-      window._lateList.push((d.nickname?`(${d.nickname}) `:'')+d.name+` [${b.name}] – สาย ${d.mins} นาที`);
+      window._lateList.push(`${b.id} ${d.name}${d.nickname?' '+d.nickname:''} – สาย ${d.mins} นาที`);
     });
   });
   const countEl=document.getElementById('late-count');
@@ -2130,7 +2145,35 @@ function renderSuspicious(suspicious) {
     </div>`;
 }
 
-function renderStaff(staff) {
+let _allStaff = [];
+
+function populateOfficeFilters() {
+  const opts = '<option value="">ทุกสาขา</option>' +
+    [...branches].sort((a,b)=>String(a.id).localeCompare(String(b.id),undefined,{numeric:true}))
+      .map(b=>`<option value="${b.id}">[${b.id}] ${b.name}</option>`).join('');
+  ['absent-branch-filter','late-branch-filter','staff-branch-filter'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.innerHTML=opts;
+  });
+}
+
+function applyLateFilter() {
+  const bid = document.getElementById('late-branch-filter')?.value||'';
+  const listEl = document.getElementById('late-list');
+  if (!listEl) return;
+  listEl.querySelectorAll('.row-hover').forEach(row=>{
+    const sub = row.querySelector('.text-\\[11px\\]')?.textContent||'';
+    row.style.display = (!bid || sub.includes(`[${bid}]`)) ? '' : 'none';
+  });
+}
+
+function applyStaffFilter() {
+  const bid = document.getElementById('staff-branch-filter')?.value||'';
+  const filtered = bid ? _allStaff.filter(s=>String(s.branchId)===bid) : _allStaff;
+  renderStaff(filtered, false);
+}
+
+function renderStaff(staff, save = true) {
+  if (save) _allStaff = staff;
   document.getElementById('office-staff-body').innerHTML = !staff.length
     ? '<tr><td colspan="3" style="text-align:center;padding:40px;color:var(--muted);">ไม่มีพนักงาน</td></tr>'
     : staff.map(s => `
@@ -2259,6 +2302,9 @@ async function renderAbsentByDate() {
   const [y,m,d] = selDate.split('-');
   const thLabel = `${parseInt(d)} ${thM[parseInt(m)]} ${parseInt(y)+543}`;
 
+  const filterBid2 = document.getElementById('absent-branch-filter')?.value||'';
+  if (filterBid2) res.branches = res.branches.filter(b=>String(b.id)===filterBid2);
+
   if (!res.branches.length) {
     content.innerHTML = `<div class="card" style="padding:48px;text-align:center;"><div style="font-size:32px;color:var(--success);margin-bottom:8px;">✓</div><div class="h-2" style="color:var(--success);">พนักงานทุกคนมาทำงานครบ</div><div class="text-xs" style="color:var(--muted);margin-top:4px;">${thLabel}</div></div>`;
     return;
@@ -2266,7 +2312,7 @@ async function renderAbsentByDate() {
 
   window._absentList = [];
   res.branches.forEach(b => b.absent.forEach(s => {
-    window._absentList.push((s.nickname?`(${s.nickname}) `:'')+s.name+` [${b.name}]`);
+    window._absentList.push(`${b.id} ${s.name}${s.nickname?' '+s.nickname:''}`);
   }));
 
   content.innerHTML = `
