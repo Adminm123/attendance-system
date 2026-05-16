@@ -152,6 +152,10 @@ body{
 .btn-ghost:hover:not(:disabled){background:var(--bg);border-color:var(--navy-500);}
 .btn-soft{background:var(--navy-50);color:var(--navy-900);}
 .btn-soft:hover:not(:disabled){background:var(--navy-100);}
+@keyframes btn-pulse{0%,100%{box-shadow:0 0 0 0 rgba(var(--pulse-rgb),.55);}60%{box-shadow:0 0 0 10px rgba(var(--pulse-rgb),0);}}
+.btn-glow{animation:btn-pulse 1.4s ease-in-out infinite;}
+.btn-primary.btn-glow{--pulse-rgb:7,34,76;}
+.btn-success.btn-glow{--pulse-rgb:15,122,74;}
 
 /* Ripple */
 .btn .ripple{
@@ -2376,12 +2380,15 @@ function updatePoseUI(idx) {
     document.getElementById('po-label').textContent = p.label;
     document.getElementById('po-hint').textContent  = p.hint;
   }
-  document.getElementById('btn-cap').textContent = `สแกน · ${p.label}`;
-  document.getElementById('btn-cap').disabled = false;
+  const _cap = document.getElementById('btn-cap');
+  _cap.textContent = `สแกน · ${p.label}`;
+  _cap.disabled = false;
+  _cap.classList.add('btn-glow');
   document.getElementById('cap-ok').classList.add('hidden');
   const _save = document.getElementById('btn-save');
   _save.disabled = true;
   _save.className = 'btn flex-1 py-4 rounded-2xl text-sm';
+  _save.classList.remove('btn-glow');
   _save.style.cssText = 'background:var(--bg-2);color:var(--faint);';
   for (let i = 0; i < 5; i++) {
     const dot = document.getElementById('dot-' + i);
@@ -2432,16 +2439,19 @@ async function captureOne() {
     if (ov) {
       ov.style.background = 'rgba(15,122,74,0.9)';
       document.getElementById('po-step').textContent = '✓';
-      document.getElementById('po-emoji').textContent = '🎉';
+      document.getElementById('po-emoji').textContent = '';
       document.getElementById('po-label').textContent = 'สแกนครบ 5 ท่าแล้ว';
       document.getElementById('po-hint').textContent  = 'กด "บันทึก" เพื่อลงทะเบียน';
     }
-    document.getElementById('btn-cap').textContent    = 'ครบ 5 ท่า';
-    document.getElementById('btn-cap').disabled = true;
+    const capBtn = document.getElementById('btn-cap');
+    capBtn.textContent = 'ครบ 5 ท่า';
+    capBtn.disabled = true;
+    capBtn.classList.remove('btn-glow');
     const save = document.getElementById('btn-save');
     save.disabled = false;
     save.removeAttribute('style');
     save.className = 'btn btn-success flex-1 py-4 rounded-2xl text-sm font-semibold';
+    save.classList.add('btn-glow');
   }
 }
 
