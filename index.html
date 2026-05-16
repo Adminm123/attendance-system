@@ -1820,7 +1820,7 @@ async function loadHomeHistory() {
     const nameDisplay = rec.nickname
       ? `<span style="color:#C5962A;font-weight:700;font-size:11px;">(${rec.nickname})</span> ${rec.name}`
       : rec.name;
-    return `<div onclick="showEmployeeHistory('${rec.name.replace(/'/g,"\\'")}')" class="row-hover" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:11px;cursor:pointer;">
+    return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#fff;border:1px solid var(--line);border-radius:11px;">
       <span style="width:6px;height:6px;border-radius:50%;background:${dotCol};flex-shrink:0;"></span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:12.5px;font-weight:500;color:var(--ink);">${nameDisplay}</div>
