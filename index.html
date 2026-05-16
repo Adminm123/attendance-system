@@ -1246,13 +1246,26 @@ function toast(msg, type = 'info') {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.classList.add('hidden'), 2500);
 }
-function changeView(id) {
+function changeView(id, pushHistory = true) {
   document.querySelectorAll('#app > section').forEach(v => v.classList.add('hidden'));
   document.getElementById('view-' + id)?.classList.remove('hidden');
   document.body.classList.toggle('office-active', id === 'office');
   window.scrollTo(0, 0);
   if (id === 'register') updateBranchDropdown();
+  if (pushHistory) {
+    if (id === 'scan' || id === 'result') history.replaceState({ view: id }, '');
+    else history.pushState({ view: id }, '');
+  }
 }
+
+window.addEventListener('popstate', e => {
+  const prev = e.state?.view || 'home';
+  const cur = [...document.querySelectorAll('#app > section')]
+    .find(s => !s.classList.contains('hidden'))?.id?.replace('view-', '') || 'home';
+  if (cur === 'scan' || cur === 'result' || cur === 'register') stopCam();
+  if (cur === 'register') { addFaceMode = false; addFaceTarget = ''; }
+  changeView(prev, false);
+});
 function goHome() {
   stopCam();
   changeView('home');
@@ -1297,6 +1310,7 @@ window.onload = async () => {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
   }
+  history.replaceState({ view: 'home' }, '');
   startClock();
   paintHomeDate();
 
